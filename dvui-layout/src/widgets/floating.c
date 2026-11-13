@@ -9,16 +9,16 @@
 // Společný vtable pro plovoucí widgety: děti umísťuje do content rectu
 // (DVUI: rectFor/screenRectScale/minSizeForChild jsou u všech tří stejné).
 #define FLOATING_VTABLE(Type, prefix) \
-    static dvui_WidgetData *prefix##_data(void *ptr) { return &((Type *)ptr)->wd; } \
-    static dvui_Rect prefix##_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) { \
+    static dvui_WidgetData* prefix##_data(void* ptr) { return &((Type*)ptr)->wd; } \
+    static dvui_Rect prefix##_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) { \
         (void)id; \
-        return dvui_place_in(dvui_rect_just_size(dvui_widget_data_content_rect(&((Type *)ptr)->wd)), min_size, e, g); \
+        return dvui_place_in(dvui_rect_just_size(dvui_widget_data_content_rect(&((Type*)ptr)->wd)), min_size, e, g); \
     } \
-    static dvui_RectScale prefix##_screen_rect_scale(void *ptr, dvui_Rect r) { \
-        return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&((Type *)ptr)->wd), r); \
+    static dvui_RectScale prefix##_screen_rect_scale(void* ptr, dvui_Rect r) { \
+        return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&((Type*)ptr)->wd), r); \
     } \
-    static void prefix##_min_size_for_child(void *ptr, dvui_Size s) { \
-        Type *self = ptr; \
+    static void prefix##_min_size_for_child(void* ptr, dvui_Size s) { \
+        Type* self = ptr; \
         dvui_widget_data_min_size_max(&self->wd, dvui_options_pad_size(&self->wd.options, s)); \
     } \
     static const dvui_WidgetVTable prefix##_vtable = {prefix##_data, prefix##_rect_for, prefix##_screen_rect_scale, prefix##_min_size_for_child};
@@ -29,11 +29,11 @@
 
 FLOATING_VTABLE(dvui_FloatingWidget, floating)
 
-dvui_Widget dvui_floating_widget_widget(dvui_FloatingWidget *self) { return (dvui_Widget){self, &floating_vtable}; }
+dvui_Widget dvui_floating_widget_widget(dvui_FloatingWidget* self) { return (dvui_Widget){self, &floating_vtable}; }
 
 // Subwindow pro libovolnou dočasnou plovoucí věc. Sám se nefokusuje; kdy se
 // ukazuje, rozhoduje volající kód.
-void dvui_floating_widget_init(dvui_FloatingWidget *self, dvui_Src src, dvui_FloatingInitOptions init_opts, dvui_Options opts_in) {
+void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_FloatingInitOptions init_opts, dvui_Options opts_in) {
     // měřítko podle rodiče
     const float scale_val = dvui_widget_screen_rect_scale(dvui_parent_get(), (dvui_Rect){0}).s / dvui_window_natural_scale();
     dvui_Options opts = opts_in;
@@ -84,7 +84,7 @@ void dvui_floating_widget_init(dvui_FloatingWidget *self, dvui_Src src, dvui_Flo
     dvui_scale_widget_init(&self->scaler, DVUI_SRC, &self->scale_val, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
 }
 
-void dvui_floating_widget_deinit(dvui_FloatingWidget *self) {
+void dvui_floating_widget_deinit(dvui_FloatingWidget* self) {
     dvui_scale_widget_deinit(&self->scaler);
     dvui_widget_data_min_size_set_and_refresh(&self->wd);
     // mimo normální layout – rodiči min. velikost nehlásíme
@@ -103,10 +103,10 @@ void dvui_floating_widget_deinit(dvui_FloatingWidget *self) {
 // ===========================================================================
 
 // řetěz vnořených tooltipů
-static dvui_FloatingTooltipWidget *tooltip_current = nullptr;
+static dvui_FloatingTooltipWidget* tooltip_current = nullptr;
 
-static dvui_FloatingTooltipWidget *tooltip_set(dvui_FloatingTooltipWidget *tt) {
-    dvui_FloatingTooltipWidget *ret = tooltip_current;
+static dvui_FloatingTooltipWidget* tooltip_set(dvui_FloatingTooltipWidget* tt) {
+    dvui_FloatingTooltipWidget* ret = tooltip_current;
     tooltip_current = tt;
     return ret;
 }
@@ -120,12 +120,12 @@ dvui_Options dvui_floating_tooltip_widget_defaults = {
 
 FLOATING_VTABLE(dvui_FloatingTooltipWidget, tooltip)
 
-dvui_Widget dvui_floating_tooltip_widget_widget(dvui_FloatingTooltipWidget *self) { return (dvui_Widget){self, &tooltip_vtable}; }
-dvui_WidgetData *dvui_floating_tooltip_widget_data(dvui_FloatingTooltipWidget *self) { return &self->wd; }
+dvui_Widget dvui_floating_tooltip_widget_widget(dvui_FloatingTooltipWidget* self) { return (dvui_Widget){self, &tooltip_vtable}; }
+dvui_WidgetData* dvui_floating_tooltip_widget_data(dvui_FloatingTooltipWidget* self) { return &self->wd; }
 
 // Ukáže se, když je myš v active_rect. Zmizí, když je myš mimo active_rect,
 // mimo tooltip a neukazuje se žádný vnořený tooltip.
-void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget *self, dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Options opts_in) {
+void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget* self, dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Options opts_in) {
     // Do layoutu jde jen identita (id_extra) a rect; zbytek opts_in stylizuje
     // obsah (viz self->options).
     const dvui_Options wd_opts = {
@@ -146,11 +146,11 @@ void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget *self, dvui_Sr
     // rect nepředáváme scaleru
     self->options.rect = (dvui_OptRect){0};
 
-    const bool *showing = DVUI_DATA_GET(self->wd.id, "_showing", bool);
+    const bool* showing = DVUI_DATA_GET(self->wd.id, "_showing", bool);
     if (showing) self->showing = *showing;
 }
 
-static void tooltip_install(dvui_FloatingTooltipWidget *self) {
+static void tooltip_install(dvui_FloatingTooltipWidget* self) {
     self->installed = true;
     dvui_widget_data_register(&self->wd);
     dvui_parent_set(dvui_floating_tooltip_widget_widget(self));
@@ -174,15 +174,15 @@ static void tooltip_install(dvui_FloatingTooltipWidget *self) {
 }
 
 // DVUI: FloatingTooltipWidget.shown
-bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget *self) {
+bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget* self) {
     // ochrana proti opakovanému volání
     if (self->installed) return true;
 
     // je myš v active_rect?
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .r = self->init_options.active_rect})) continue;
         if (e->kind == DVUI_EVENT_MOUSE && e->evt.mouse.action == DVUI_MOUSE_POSITION) {
             self->mouse_good_this_frame = true;
@@ -205,7 +205,7 @@ bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget *self) {
             const dvui_Point mp = dvui_point_scale(dvui_current_window()->mouse_pt, 1.0f / dvui_window_natural_scale());
             DVUI_DATA_SET(self->wd.id, "_sticky_pt", dvui_Point, mp);
         } else {
-            const dvui_Point *mpp = DVUI_DATA_GET(self->wd.id, "_sticky_pt", dvui_Point);
+            const dvui_Point* mpp = DVUI_DATA_GET(self->wd.id, "_sticky_pt", dvui_Point);
             const dvui_Point mp = mpp ? *mpp : (dvui_Point){0};
             dvui_RectNatural r = dvui_rect_to_size(dvui_rect_from_point(mp), dvui_rect_size(self->wd.rect));
             r.x += 10;
@@ -221,7 +221,7 @@ bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget *self) {
     if (self->init_options.interactive) {
         // je myš nad samotným tooltipem?
         for (size_t i = 0; i < n; i++) {
-            dvui_Event *e = &evts[i];
+            dvui_Event* e = &evts[i];
             if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .r = dvui_widget_data_border_rect_scale(&self->wd).r})) continue;
             if (e->kind == DVUI_EVENT_MOUSE && e->evt.mouse.action == DVUI_MOUSE_POSITION) self->mouse_good_this_frame = true;
         }
@@ -230,7 +230,7 @@ bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget *self) {
 }
 
 // DVUI: FloatingTooltipWidget.deinit
-void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget *self) {
+void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget* self) {
     if (!self->installed) {
         if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
         return;
@@ -239,7 +239,7 @@ void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget *self) {
     // máme se ukazovat i příště?
     if (self->mouse_good_this_frame || (self->init_options.interactive && self->tt_child_shown)) {
         DVUI_DATA_SET(self->wd.id, "_showing", bool, true);
-        for (dvui_FloatingTooltipWidget *p = self->parent_tooltip; p; p = p->parent_tooltip) p->tt_child_shown = true;
+        for (dvui_FloatingTooltipWidget* p = self->parent_tooltip; p; p = p->parent_tooltip) p->tt_child_shown = true;
     } else {
         // myš je mimo spoušť i tooltip – příště se zavře
         dvui_data_remove(nullptr, self->wd.id, "_showing");
@@ -286,8 +286,8 @@ dvui_Options dvui_floating_window_widget_defaults = {
 
 FLOATING_VTABLE(dvui_FloatingWindowWidget, fwin)
 
-dvui_Widget dvui_floating_window_widget_widget(dvui_FloatingWindowWidget *self) { return (dvui_Widget){self, &fwin_vtable}; }
-dvui_WidgetData *dvui_floating_window_widget_data(dvui_FloatingWindowWidget *self) { return &self->wd; }
+dvui_Widget dvui_floating_window_widget_widget(dvui_FloatingWindowWidget* self) { return (dvui_Widget){self, &fwin_vtable}; }
+dvui_WidgetData* dvui_floating_window_widget_data(dvui_FloatingWindowWidget* self) { return &self->wd; }
 
 static dvui_Cursor drag_part_cursor(dvui_DragPart p) {
     switch (p) {
@@ -305,7 +305,7 @@ static dvui_Cursor drag_part_cursor(dvui_DragPart p) {
 }
 
 // DVUI: FloatingWindowWidget.init
-void dvui_floating_window_widget_init(dvui_FloatingWindowWidget *self, dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts) {
+void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts) {
     const dvui_Options options = dvui_options_override(dvui_floating_window_widget_defaults, opts);
     dvui_Options box_options = options;
     box_options.id_extra = (dvui_OptUsize){0};
@@ -317,22 +317,22 @@ void dvui_floating_window_widget_init(dvui_FloatingWindowWidget *self, dvui_Src 
                                     (dvui_Options){.id_extra = opts.id_extra, .rect = DVUI_SOME((dvui_Rect){0}), .name = options.name}),
         .init_options = init_opts,
     };
-    dvui_WidgetData *wd = &self->wd;
-    dvui_Window *cw = dvui_current_window();
+    dvui_WidgetData* wd = &self->wd;
+    dvui_Window* cw = dvui_current_window();
 
-    const dvui_Rect *stored = DVUI_DATA_GET(wd->id, "_rect", dvui_Rect);
+    const dvui_Rect* stored = DVUI_DATA_GET(wd->id, "_rect", dvui_Rect);
     wd->rect = stored ? *stored : (dvui_Rect){0};
     if (init_opts.rect) wd->rect = *init_opts.rect;
     if (dvui_first_frame(wd->id) && opts.rect.has) wd->rect = opts.rect.v;
 
-    const bool *as = DVUI_DATA_GET(wd->id, "_auto_size", bool);
+    const bool* as = DVUI_DATA_GET(wd->id, "_auto_size", bool);
     if (as) {
         self->auto_size = *as;
     } else if (wd->rect.w == 0 && wd->rect.h == 0) {
         dvui_floating_window_widget_auto_size(self);
     }
 
-    const bool *ap = DVUI_DATA_GET(wd->id, "_auto_pos", bool);
+    const bool* ap = DVUI_DATA_GET(wd->id, "_auto_pos", bool);
     if (ap) {
         self->auto_pos = *ap;
     } else {
@@ -377,7 +377,7 @@ void dvui_floating_window_widget_init(dvui_FloatingWindowWidget *self, dvui_Src 
                 while (nudge) {
                     nudge = false;
                     for (size_t i = 1; i < cw->subwindows.len; i++) {
-                        const dvui_Subwindow *subw = &cw->subwindows.stack[i];
+                        const dvui_Subwindow* subw = &cw->subwindows.stack[i];
                         if (subw->id != wd->id && dvui_point_equals(dvui_rect_top_left(subw->rect), dvui_rect_top_left(wd->rect))) {
                             wd->rect.x += 24;
                             wd->rect.y += 24;
@@ -410,7 +410,7 @@ void dvui_floating_window_widget_init(dvui_FloatingWindowWidget *self, dvui_Src 
     }
 
     if (dvui_captured(wd->id)) {
-        const dvui_DragPart *dp = DVUI_DATA_GET(wd->id, "_drag_part", dvui_DragPart);
+        const dvui_DragPart* dp = DVUI_DATA_GET(wd->id, "_drag_part", dvui_DragPart);
         if (dp) {
             self->has_drag_part = true;
             self->drag_part = *dp;
@@ -437,7 +437,7 @@ void dvui_floating_window_widget_init(dvui_FloatingWindowWidget *self, dvui_Src 
 }
 
 // DVUI: FloatingWindowWidget.drawBackground
-void dvui_floating_window_widget_draw_background(dvui_FloatingWindowWidget *self) {
+void dvui_floating_window_widget_draw_background(dvui_FloatingWindowWidget* self) {
     if (self->init_options.modal && !dvui_first_frame(self->wd.id)) {
         dvui_Color col = dvui_options_color(&self->options, DVUI_COLOR_TEXT);
         col.a = self->init_options.has_modal_alpha ? self->init_options.modal_alpha : (dvui_theme_get()->dark ? 60 : 80);
@@ -469,8 +469,8 @@ static dvui_DragPart drag_part(dvui_EventMouse me, dvui_RectScale rs) {
 }
 
 // DVUI: FloatingWindowWidget.dragAdjust (p a dp v natural souřadnicích)
-static void drag_adjust(dvui_FloatingWindowWidget *self, dvui_PointNatural p, dvui_PointNatural dp, dvui_DragPart part) {
-    dvui_Rect *r = &self->wd.rect;
+static void drag_adjust(dvui_FloatingWindowWidget* self, dvui_PointNatural p, dvui_PointNatural dp, dvui_DragPart part) {
+    dvui_Rect* r = &self->wd.rect;
     switch (part) {
     case DVUI_DRAG_MIDDLE:
         r->x += dp.x;
@@ -529,12 +529,12 @@ static dvui_PointNatural to_natural(dvui_PointPhysical p) { return dvui_point_sc
 
 // DVUI: FloatingWindowWidget.processEventsBefore – tažení a pravý dolní roh
 // musí mít přednost před dětmi.
-void dvui_floating_window_widget_process_events_before(dvui_FloatingWindowWidget *self) {
+void dvui_floating_window_widget_process_events_before(dvui_FloatingWindowWidget* self) {
     const dvui_RectScale rs = dvui_widget_data_rect_scale(&self->wd);
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .r = rs.r})) continue;
         if (e->kind != DVUI_EVENT_MOUSE) continue;
         const dvui_EventMouse me = e->evt.mouse;
@@ -588,15 +588,15 @@ void dvui_floating_window_widget_process_events_before(dvui_FloatingWindowWidget
     }
 }
 
-void dvui_floating_window_widget_drag_area_set(dvui_FloatingWindowWidget *self, dvui_RectPhysical rect) { self->drag_area = rect; }
+void dvui_floating_window_widget_drag_area_set(dvui_FloatingWindowWidget* self, dvui_RectPhysical rect) { self->drag_area = rect; }
 
 // DVUI: FloatingWindowWidget.processEventsAfter
-void dvui_floating_window_widget_process_events_after(dvui_FloatingWindowWidget *self) {
+void dvui_floating_window_widget_process_events_after(dvui_FloatingWindowWidget* self) {
     const dvui_RectScale rs = dvui_widget_data_rect_scale(&self->wd);
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .r = rs.r})) continue;
         if (e->kind != DVUI_EVENT_MOUSE) continue;
         const dvui_EventMouse me = e->evt.mouse;
@@ -656,10 +656,10 @@ void dvui_floating_window_widget_process_events_after(dvui_FloatingWindowWidget 
     }
 }
 
-void dvui_floating_window_widget_auto_size(dvui_FloatingWindowWidget *self) { self->auto_size = true; }
-void dvui_floating_window_widget_auto_position(dvui_FloatingWindowWidget *self) { self->auto_pos = true; }
+void dvui_floating_window_widget_auto_size(dvui_FloatingWindowWidget* self) { self->auto_size = true; }
+void dvui_floating_window_widget_auto_position(dvui_FloatingWindowWidget* self) { self->auto_pos = true; }
 
-void dvui_floating_window_widget_close(dvui_FloatingWindowWidget *self) {
+void dvui_floating_window_widget_close(dvui_FloatingWindowWidget* self) {
     if (self->init_options.open_flag) {
         *self->init_options.open_flag = false;
     } else {
@@ -669,8 +669,8 @@ void dvui_floating_window_widget_close(dvui_FloatingWindowWidget *self) {
 }
 
 // DVUI: FloatingWindowWidget.deinit
-void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget *self) {
-    dvui_Window *cw = dvui_current_window();
+void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget* self) {
+    dvui_Window* cw = dvui_current_window();
     if (self->has_layout) dvui_box_widget_deinit(&self->layout);
 
     if (self->has_auto_size_refresh_prev_value) {
@@ -708,8 +708,8 @@ void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget *self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-dvui_FloatingWindowWidget *dvui_floating_window(dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts) {
-    dvui_FloatingWindowWidget *ret = dvui_widget_alloc(sizeof *ret);
+dvui_FloatingWindowWidget* dvui_floating_window(dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts) {
+    dvui_FloatingWindowWidget* ret = dvui_widget_alloc(sizeof *ret);
     dvui_floating_window_widget_init(ret, src, init_opts, opts);
     dvui_floating_window_widget_process_events_before(ret);
     dvui_floating_window_widget_draw_background(ret);
@@ -748,13 +748,13 @@ static bool close_button(dvui_Src src, dvui_Options opts) {
 }
 
 dvui_RectPhysical dvui_window_header(dvui_WindowHeaderOptions options) {
-    dvui_OverlayWidget *over = dvui_overlay(DVUI_SRC, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .name = "WindowHeader"});
+    dvui_OverlayWidget* over = dvui_overlay(DVUI_SRC, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .name = "WindowHeader"});
 
     // titulek (zde jen zástupce o velikosti textu)
     dvui_label_placeholder(DVUI_SRC, options.title_size,
                            (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .padding = DVUI_SOME(((dvui_Rect){6, 6, 6, 4}))});
 
-    dvui_BoxWidget *hbox = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
+    dvui_BoxWidget* hbox = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
 
     if (options.open_flag) {
         // DVUI button_order .cancel_ok → zavírací tlačítko vlevo
@@ -771,9 +771,9 @@ dvui_RectPhysical dvui_window_header(dvui_WindowHeaderOptions options) {
     dvui_box_widget_deinit(hbox);
 
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = over->wd.id, .r = dvui_widget_data_content_rect_scale(&over->wd).r})) continue;
         if (e->kind != DVUI_EVENT_MOUSE) continue;
         if (e->evt.mouse.action == DVUI_MOUSE_PRESS && dvui_button_pointer(e->evt.mouse.button)) {

@@ -25,7 +25,7 @@ Obsah:
 ## 1. Smyčka snímku (Window)
 
 ```c
-dvui_Window *win = dvui_window_create(backend);      // DVUI: Window.init
+dvui_Window* win = dvui_window_create(backend);      // DVUI: Window.init
 dvui_window_open_flag_set(win, &open);               // zavření okna / app quit → open = false
 
 while (open) {
@@ -58,13 +58,13 @@ Každý widget, který může mít děti, poskytuje tabulku funkcí:
 
 ```c
 typedef struct dvui_WidgetVTable {
-    dvui_WidgetData *(*data)(void *ptr);
-    dvui_Rect (*rect_for)(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
-    dvui_RectScale (*screen_rect_scale)(void *ptr, dvui_Rect r);
-    void (*min_size_for_child)(void *ptr, dvui_Size s);
+    dvui_WidgetData* (*data)(void* ptr);
+    dvui_Rect (*rect_for)(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
+    dvui_RectScale (*screen_rect_scale)(void* ptr, dvui_Rect r);
+    void (*min_size_for_child)(void* ptr, dvui_Size s);
 } dvui_WidgetVTable;
 
-typedef struct dvui_Widget { void *ptr; const dvui_WidgetVTable *vtable; } dvui_Widget;
+typedef struct dvui_Widget { void* ptr; const dvui_WidgetVTable* vtable; } dvui_Widget;
 ```
 
 | Funkce | Kontrakt |
@@ -213,9 +213,9 @@ projde celé pole a vybere si ty, které mu patří:
 
 ```c
 size_t n;
-dvui_Event *evts = dvui_events(&n);
+dvui_Event* evts = dvui_events(&n);
 for (size_t i = 0; i < n; i++) {
-    dvui_Event *e = &evts[i];
+    dvui_Event* e = &evts[i];
     if (!dvui_event_match_simple(e, &self->wd)) continue;   // patří mi?
     if (e->kind == DVUI_EVENT_MOUSE && e->evt.mouse.action == DVUI_MOUSE_PRESS) {
         dvui_event_handle(e, &self->wd);                     // zpracováno – ostatní ji už neuvidí
@@ -362,17 +362,17 @@ Backend je struktura ukazatelů na funkce (DVUI `Backend.zig`):
 
 ```c
 typedef struct dvui_Backend {
-    void *ctx;
-    void (*begin)(void *ctx);
-    void (*end)(void *ctx);
-    dvui_SizePhysical (*pixel_size)(void *ctx);
-    dvui_SizeNatural (*window_size)(void *ctx);
-    float (*content_scale)(void *ctx);
-    void (*draw_clipped_triangles)(void *ctx, const dvui_Vertex *vtx, size_t vtx_count,
-                                   const uint32_t *idx, size_t idx_count, const dvui_RectPhysical *clip);
-    void (*set_cursor)(void *ctx, dvui_Cursor cursor);
-    void (*render_present)(void *ctx);
-    int64_t (*nano_time)(void *ctx);
+    void* ctx;
+    void (*begin)(void* ctx);
+    void (*end)(void* ctx);
+    dvui_SizePhysical (*pixel_size)(void* ctx);
+    dvui_SizeNatural (*window_size)(void* ctx);
+    float (*content_scale)(void* ctx);
+    void (*draw_clipped_triangles)(void* ctx, const dvui_Vertex* vtx, size_t vtx_count,
+                                   const uint32_t* idx, size_t idx_count, const dvui_RectPhysical* clip);
+    void (*set_cursor)(void* ctx, dvui_Cursor cursor);
+    void (*render_present)(void* ctx);
+    int64_t (*nano_time)(void* ctx);
 } dvui_Backend;
 ```
 
@@ -428,29 +428,29 @@ typedef struct RowWidget {
     dvui_BasicLayout layout;
 } RowWidget;
 
-static dvui_WidgetData *row_data(void *ptr) { return &((RowWidget *)ptr)->wd; }
+static dvui_WidgetData* row_data(void* ptr) { return &((RowWidget*)ptr)->wd; }
 
-static dvui_Rect row_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
-    RowWidget *self = ptr;
+static dvui_Rect row_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+    RowWidget* self = ptr;
     // děti dostávají místo v content rectu posunutém do (0, 0)
     return dvui_basic_layout_rect_for(&self->layout, dvui_rect_just_size(dvui_widget_data_content_rect(&self->wd)),
                                       id, min_size, e, g);
 }
 
-static dvui_RectScale row_screen_rect_scale(void *ptr, dvui_Rect r) {
-    RowWidget *self = ptr;
+static dvui_RectScale row_screen_rect_scale(void* ptr, dvui_Rect r) {
+    RowWidget* self = ptr;
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&self->wd), r);
 }
 
-static void row_min_size_for_child(void *ptr, dvui_Size s) {
-    RowWidget *self = ptr;
+static void row_min_size_for_child(void* ptr, dvui_Size s) {
+    RowWidget* self = ptr;
     const dvui_Size children = dvui_basic_layout_min_size_for_child(&self->layout, s);
     dvui_widget_data_min_size_max(&self->wd, dvui_options_pad_size(&self->wd.options, children));
 }
 
 static const dvui_WidgetVTable row_vtable = {row_data, row_rect_for, row_screen_rect_scale, row_min_size_for_child};
 
-void row_init(RowWidget *self, dvui_Src src, dvui_Options opts) {
+void row_init(RowWidget* self, dvui_Src src, dvui_Options opts) {
     const dvui_Options defaults = {.name = "Row", .padding = DVUI_SOME(dvui_rect_all(4)), .background = DVUI_SOME(true)};
     *self = (RowWidget){
         .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, dvui_options_override(defaults, opts)),
@@ -461,7 +461,7 @@ void row_init(RowWidget *self, dvui_Src src, dvui_Options opts) {
     dvui_parent_set((dvui_Widget){self, &row_vtable});
 }
 
-void row_deinit(RowWidget *self) {
+void row_deinit(RowWidget* self) {
     dvui_widget_data_min_size_set_and_refresh(&self->wd);
     dvui_widget_data_min_size_report_to_parent(&self->wd);
     dvui_parent_reset(self->wd.id, self->wd.parent);

@@ -242,7 +242,7 @@ dvui_Theme dvui_theme_adwaita_light(void) {
     };
 }
 
-dvui_Color dvui_theme_adjust_color_for_state(const dvui_Theme *t, dvui_Color col, dvui_ColorAsk ask) {
+dvui_Color dvui_theme_adjust_color_for_state(const dvui_Theme* t, dvui_Color col, dvui_ColorAsk ask) {
     switch (ask) {
     case DVUI_COLOR_FILL_HOVER: return dvui_color_lighten(col, t->dark ? 10 : -10);
     case DVUI_COLOR_FILL_PRESS: return dvui_color_lighten(col, t->dark ? 20 : -20);
@@ -252,8 +252,8 @@ dvui_Color dvui_theme_adjust_color_for_state(const dvui_Theme *t, dvui_Color col
 
 // DVUI: Theme.color. Zig `continue :sw .fill` zachovává původní `ask`, proto
 // se zde předává `ask` dál beze změny.
-dvui_Color dvui_theme_color(const dvui_Theme *t, dvui_StyleName style, dvui_ColorAsk ask) {
-    const dvui_ThemeStyle *cs = nullptr;
+dvui_Color dvui_theme_color(const dvui_Theme* t, dvui_StyleName style, dvui_ColorAsk ask) {
+    const dvui_ThemeStyle* cs = nullptr;
     switch (style) {
     case DVUI_STYLE_CONTENT:
         switch (ask) {
@@ -371,39 +371,39 @@ dvui_Options dvui_options_style_only(dvui_Options self) {
     };
 }
 
-size_t dvui_options_id_extra(const dvui_Options *o) { return o->id_extra.has ? o->id_extra.v : 0; }
-dvui_Expand dvui_options_expand_get(const dvui_Options *o) { return o->expand.has ? o->expand.v : DVUI_EXPAND_NONE; }
-dvui_Gravity dvui_options_gravity_get(const dvui_Options *o) {
+size_t dvui_options_id_extra(const dvui_Options* o) { return o->id_extra.has ? o->id_extra.v : 0; }
+dvui_Expand dvui_options_expand_get(const dvui_Options* o) { return o->expand.has ? o->expand.v : DVUI_EXPAND_NONE; }
+dvui_Gravity dvui_options_gravity_get(const dvui_Options* o) {
     return (dvui_Gravity){o->gravity_x.has ? o->gravity_x.v : 0.0f, o->gravity_y.has ? o->gravity_y.v : 0.0f};
 }
-dvui_Rect dvui_options_margin_get(const dvui_Options *o) { return o->margin.has ? o->margin.v : (dvui_Rect){0}; }
-dvui_Rect dvui_options_border_get(const dvui_Options *o) { return o->border.has ? o->border.v : (dvui_Rect){0}; }
-dvui_Rect dvui_options_padding_get(const dvui_Options *o) { return o->padding.has ? o->padding.v : (dvui_Rect){0}; }
-bool dvui_options_background_get(const dvui_Options *o) { return o->background.has ? o->background.v : false; }
-dvui_StyleName dvui_options_style_get(const dvui_Options *o) { return o->style.has ? o->style.v : DVUI_STYLE_CONTENT; }
+dvui_Rect dvui_options_margin_get(const dvui_Options* o) { return o->margin.has ? o->margin.v : (dvui_Rect){0}; }
+dvui_Rect dvui_options_border_get(const dvui_Options* o) { return o->border.has ? o->border.v : (dvui_Rect){0}; }
+dvui_Rect dvui_options_padding_get(const dvui_Options* o) { return o->padding.has ? o->padding.v : (dvui_Rect){0}; }
+bool dvui_options_background_get(const dvui_Options* o) { return o->background.has ? o->background.v : false; }
+dvui_StyleName dvui_options_style_get(const dvui_Options* o) { return o->style.has ? o->style.v : DVUI_STYLE_CONTENT; }
 
-dvui_Size dvui_options_pad_size(const dvui_Options *o, dvui_Size s) {
+dvui_Size dvui_options_pad_size(const dvui_Options* o, dvui_Size s) {
     return dvui_size_pad(dvui_size_pad(dvui_size_pad(s, dvui_options_padding_get(o)), dvui_options_border_get(o)), dvui_options_margin_get(o));
 }
 
-dvui_Size dvui_options_min_size_content_get(const dvui_Options *o) {
+dvui_Size dvui_options_min_size_content_get(const dvui_Options* o) {
     return o->min_size_content.has ? o->min_size_content.v : (dvui_Size){0};
 }
 
-dvui_Size dvui_options_max_size_content_get(const dvui_Options *o) {
+dvui_Size dvui_options_max_size_content_get(const dvui_Options* o) {
     return o->max_size_content.has ? o->max_size_content.v : dvui_size_all(DVUI_MAX_FLOAT_SAFE);
 }
 
-dvui_Size dvui_options_min_size_get(const dvui_Options *o) {
+dvui_Size dvui_options_min_size_get(const dvui_Options* o) {
     return dvui_options_pad_size(o, dvui_size_min(dvui_options_min_size_content_get(o), dvui_options_max_size_content_get(o)));
 }
 
-dvui_Size dvui_options_max_size_get(const dvui_Options *o) {
+dvui_Size dvui_options_max_size_get(const dvui_Options* o) {
     return dvui_options_pad_size(o, dvui_options_max_size_content_get(o));
 }
 
-dvui_Color dvui_options_color(const dvui_Options *o, dvui_ColorAsk ask) {
-    const dvui_Theme *t = dvui_theme_get();
+dvui_Color dvui_options_color(const dvui_Options* o, dvui_ColorAsk ask) {
+    const dvui_Theme* t = dvui_theme_get();
     switch (ask) {
     case DVUI_COLOR_BORDER:
         if (o->color_border.has) return o->color_border.v;

@@ -6,7 +6,7 @@
 //
 // Skládá děti svisle nebo vodorovně. Pokud je některé dítě roztažené ve směru
 // skládání, dostane zbytek místa a za ním už žádné dítě být nemá.
-dvui_Rect dvui_basic_layout_rect_for(dvui_BasicLayout *self, dvui_Rect content_rect, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+dvui_Rect dvui_basic_layout_rect_for(dvui_BasicLayout* self, dvui_Rect content_rect, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
     if (self->seen_expanded) {
         // Dítě po roztaženém dítěti nedostane žádné místo. Pokud to má
         // fungovat, obal děti do vertikálního boxu.
@@ -37,7 +37,7 @@ dvui_Rect dvui_basic_layout_rect_for(dvui_BasicLayout *self, dvui_Rect content_r
 }
 
 // DVUI: layout.BasicLayout.minSizeForChild
-dvui_Size dvui_basic_layout_min_size_for_child(dvui_BasicLayout *self, dvui_Size s) {
+dvui_Size dvui_basic_layout_min_size_for_child(dvui_BasicLayout* self, dvui_Size s) {
     switch (self->dir) {
     case DVUI_VERTICAL:
         self->min_size_children.h += s.h;                                     // sčítáme výšky

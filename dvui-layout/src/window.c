@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-dvui_Window *dvui_current_window_ptr = nullptr;
+dvui_Window* dvui_current_window_ptr = nullptr;
 
 float dvui_scroll_speed =
 #if defined(__APPLE__)
@@ -19,7 +19,7 @@ float dvui_scroll_speed =
 // DVUI: dvui.hover_fade_secs
 static const float hover_fade_secs = 0.12f;
 
-dvui_Window *dvui_current_window(void) {
+dvui_Window* dvui_current_window(void) {
     if (!dvui_current_window_ptr) {
         DVUI_LOG_ERR("called outside of dvui_window_begin/dvui_window_end");
         abort();
@@ -34,8 +34,8 @@ dvui_Window *dvui_current_window(void) {
 static const uint64_t fnv_offset = 0xcbf29ce484222325ULL;
 static const uint64_t fnv_prime = 0x100000001b3ULL;
 
-static uint64_t fnv_update(uint64_t h, const void *data, size_t len) {
-    const uint8_t *p = data;
+static uint64_t fnv_update(uint64_t h, const void* data, size_t len) {
+    const uint8_t* p = data;
     for (size_t i = 0; i < len; i++) {
         h ^= p[i];
         h *= fnv_prime;
@@ -55,7 +55,7 @@ dvui_Id dvui_id_extend(dvui_Id start, dvui_Src src, size_t id_extra) {
     return h;
 }
 
-dvui_Id dvui_id_update(dvui_Id id, const char *name) {
+dvui_Id dvui_id_update(dvui_Id id, const char* name) {
     return fnv_update(id, name, strlen(name));
 }
 
@@ -63,7 +63,7 @@ dvui_Id dvui_id_update(dvui_Id id, const char *name) {
 // Widget (DVUI: Widget.zig)
 // ---------------------------------------------------------------------------
 
-dvui_WidgetData *dvui_widget_data(dvui_Widget w) { return w.vtable->data(w.ptr); }
+dvui_WidgetData* dvui_widget_data(dvui_Widget w) { return w.vtable->data(w.ptr); }
 
 dvui_Id dvui_widget_extend_id(dvui_Widget w, dvui_Src src, size_t id_extra) {
     return dvui_id_extend(dvui_widget_data(w)->id, src, id_extra);
@@ -78,22 +78,22 @@ dvui_RectScale dvui_widget_screen_rect_scale(dvui_Widget w, dvui_Rect r) { retur
 void dvui_widget_min_size_for_child(dvui_Widget w, dvui_Size s) { w.vtable->min_size_for_child(w.ptr, s); }
 
 // Window jako widget (DVUI: Window.widget/rectFor/screenRectScale/minSizeForChild)
-static dvui_RectScale window_rect_scale(dvui_Window *win) {
+static dvui_RectScale window_rect_scale(dvui_Window* win) {
     return (dvui_RectScale){.r = win->rect_pixels, .s = win->natural_scale};
 }
 
-static dvui_WidgetData *window_data(void *ptr) { return &((dvui_Window *)ptr)->wd; }
+static dvui_WidgetData* window_data(void* ptr) { return &((dvui_Window*)ptr)->wd; }
 
-static dvui_Rect window_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
-    dvui_Window *win = ptr;
+static dvui_Rect window_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+    dvui_Window* win = ptr;
     return dvui_basic_layout_rect_for(&win->layout, win->wd.rect, id, min_size, e, g);
 }
 
-static dvui_RectScale window_screen_rect_scale(void *ptr, dvui_Rect r) {
+static dvui_RectScale window_screen_rect_scale(void* ptr, dvui_Rect r) {
     return dvui_rect_scale_rect_to_rect_scale(window_rect_scale(ptr), r);
 }
 
-static void window_min_size_for_child(void *ptr, dvui_Size s) {
+static void window_min_size_for_child(void* ptr, dvui_Size s) {
     // okno OS nemění velikost podle dětí
     (void)ptr;
     (void)s;
@@ -106,14 +106,14 @@ static const dvui_WidgetVTable window_vtable = {
     .min_size_for_child = window_min_size_for_child,
 };
 
-static dvui_Widget window_widget(dvui_Window *win) { return (dvui_Widget){.ptr = win, .vtable = &window_vtable}; }
+static dvui_Widget window_widget(dvui_Window* win) { return (dvui_Widget){.ptr = win, .vtable = &window_vtable}; }
 
 // ---------------------------------------------------------------------------
 // Subwindows (DVUI: Subwindows.zig)
 // ---------------------------------------------------------------------------
 
-void dvui_subwindows_add(dvui_Subwindows *self, dvui_Id id, dvui_Rect rect, dvui_RectPhysical rect_pixels, bool modal, dvui_Id stay_above_parent_window, bool mouse_events) {
-    dvui_Subwindow *existing = dvui_subwindows_get(self, id);
+void dvui_subwindows_add(dvui_Subwindows* self, dvui_Id id, dvui_Rect rect, dvui_RectPhysical rect_pixels, bool modal, dvui_Id stay_above_parent_window, bool mouse_events) {
+    dvui_Subwindow* existing = dvui_subwindows_get(self, id);
     if (existing) {
         if (existing->render_cmds.len > 0 || existing->render_cmds_after.len > 0) {
             DVUI_LOG_ERR("subwindowAdd %llx is clearing some drawing commands (did you try to draw between subwindowCurrentSet and subwindowAdd?)", (unsigned long long)id);
@@ -160,17 +160,17 @@ void dvui_subwindows_add(dvui_Subwindows *self, dvui_Id id, dvui_Rect rect, dvui
     self->len++;
 }
 
-dvui_SubwindowCurrentSetReturn dvui_subwindows_set_current(dvui_Subwindows *self, dvui_Id id, const dvui_RectNatural *rect) {
+dvui_SubwindowCurrentSetReturn dvui_subwindows_set_current(dvui_Subwindows* self, dvui_Id id, const dvui_RectNatural* rect) {
     const dvui_SubwindowCurrentSetReturn ret = {.id = self->current_id, .rect = self->current_rect};
     self->current_id = id;
     if (rect) self->current_rect = *rect;
     return ret;
 }
 
-bool dvui_subwindows_raise(dvui_Subwindows *self, dvui_Id id) {
+bool dvui_subwindows_raise(dvui_Subwindows* self, dvui_Id id) {
     // stack[0] je hlavní okno, to se nepřesouvá
     if (self->len < 2) return false;
-    dvui_Subwindow *items = self->stack + 1;
+    dvui_Subwindow* items = self->stack + 1;
     const size_t n = self->len - 1;
     for (size_t i = 0; i < n; i++) {
         if (items[i].id != id) continue;
@@ -189,27 +189,27 @@ bool dvui_subwindows_raise(dvui_Subwindows *self, dvui_Id id) {
     return false;
 }
 
-dvui_Id dvui_subwindows_window_for(const dvui_Subwindows *self, dvui_PointPhysical p) {
+dvui_Id dvui_subwindows_window_for(const dvui_Subwindows* self, dvui_PointPhysical p) {
     for (size_t i = self->len; i > 0; i--) {
-        const dvui_Subwindow *sw = &self->stack[i - 1];
+        const dvui_Subwindow* sw = &self->stack[i - 1];
         if (sw->mouse_events && (sw->modal || dvui_rect_contains(sw->rect_pixels, p))) return sw->id;
     }
     return 0;
 }
 
-dvui_Subwindow *dvui_subwindows_get(dvui_Subwindows *self, dvui_Id id) {
+dvui_Subwindow* dvui_subwindows_get(dvui_Subwindows* self, dvui_Id id) {
     for (size_t i = self->len; i > 0; i--) {
         if (self->stack[i - 1].id == id) return &self->stack[i - 1];
     }
     return nullptr;
 }
 
-dvui_Subwindow *dvui_subwindows_current(dvui_Subwindows *self) { return dvui_subwindows_get(self, self->current_id); }
-dvui_Subwindow *dvui_subwindows_focused(dvui_Subwindows *self) { return dvui_subwindows_get(self, self->focused_id); }
+dvui_Subwindow* dvui_subwindows_current(dvui_Subwindows* self) { return dvui_subwindows_get(self, self->current_id); }
+dvui_Subwindow* dvui_subwindows_focused(dvui_Subwindows* self) { return dvui_subwindows_get(self, self->focused_id); }
 
-void dvui_subwindows_reset(dvui_Subwindows *self) {
+void dvui_subwindows_reset(dvui_Subwindows* self) {
     for (size_t i = self->len; i > 0; i--) {
-        dvui_Subwindow *sw = &self->stack[i - 1];
+        dvui_Subwindow* sw = &self->stack[i - 1];
         if (sw->used) {
             sw->used = false;
         } else {
@@ -223,11 +223,11 @@ void dvui_subwindows_reset(dvui_Subwindows *self) {
 // Události – seznam (v aréně snímku)
 // ---------------------------------------------------------------------------
 
-static void events_append(dvui_Window *win, dvui_Event e) {
-    dvui_EventList *l = &win->events;
+static void events_append(dvui_Window* win, dvui_Event e) {
+    dvui_EventList* l = &win->events;
     if (l->len == l->cap) {
         const size_t ncap = l->cap ? l->cap * 2 : 32;
-        dvui_Event *n = dvui_arena_alloc(&win->arena, ncap * sizeof(dvui_Event));
+        dvui_Event* n = dvui_arena_alloc(&win->arena, ncap * sizeof(dvui_Event));
         if (l->len) memcpy(n, l->items, l->len * sizeof(dvui_Event));
         l->items = n;
         l->cap = ncap;
@@ -235,10 +235,10 @@ static void events_append(dvui_Window *win, dvui_Event e) {
     l->items[l->len++] = e;
 }
 
-static dvui_Id capture_id(const dvui_Window *win) { return win->has_capture ? win->capture.id : 0; }
+static dvui_Id capture_id(const dvui_Window* win) { return win->has_capture ? win->capture.id : 0; }
 
 // DVUI: Window.positionMouseEventAdd
-static void position_mouse_event_add(dvui_Window *win) {
+static void position_mouse_event_add(dvui_Window* win) {
     events_append(win, (dvui_Event){
                            .num = (uint16_t)(win->event_num + 1),
                            .target_widget_id = capture_id(win),
@@ -254,9 +254,9 @@ static void position_mouse_event_add(dvui_Window *win) {
 }
 
 // DVUI: Window.positionMouseEventRemove
-static void position_mouse_event_remove(dvui_Window *win) {
+static void position_mouse_event_remove(dvui_Window* win) {
     if (win->events.len == 0) return;
-    const dvui_Event *e = &win->events.items[win->events.len - 1];
+    const dvui_Event* e = &win->events.items[win->events.len - 1];
     if (e->kind != DVUI_EVENT_MOUSE || e->evt.mouse.action != DVUI_MOUSE_POSITION) {
         DVUI_LOG_ERR("positionMouseEventRemove removed a non-mouse or non-position event");
     }
@@ -264,27 +264,27 @@ static void position_mouse_event_remove(dvui_Window *win) {
 }
 
 // DVUI: Window.initEvents
-static void init_events(dvui_Window *win) {
+static void init_events(dvui_Window* win) {
     win->events = (dvui_EventList){0};
     win->event_num = 0;
     position_mouse_event_add(win);
 }
 
-static dvui_Id focused_widget_id_win(dvui_Window *win) {
-    dvui_Subwindow *sw = dvui_subwindows_focused(&win->subwindows);
+static dvui_Id focused_widget_id_win(dvui_Window* win) {
+    dvui_Subwindow* sw = dvui_subwindows_focused(&win->subwindows);
     return sw ? sw->focused_widget_id : 0;
 }
 
-void dvui_window_focus_events(dvui_Window *win, uint16_t event_num, dvui_Id widget_id) {
+void dvui_window_focus_events(dvui_Window* win, uint16_t event_num, dvui_Id widget_id) {
     for (size_t i = 0; i < win->events.len; i++) {
-        dvui_Event *e = &win->events.items[i];
+        dvui_Event* e = &win->events.items[i];
         if (e->num > event_num && e->kind == DVUI_EVENT_KEY) e->target_widget_id = widget_id;
     }
 }
 
-void dvui_window_capture_events(dvui_Window *win, uint16_t event_num, dvui_Id widget_id) {
+void dvui_window_capture_events(dvui_Window* win, uint16_t event_num, dvui_Id widget_id) {
     for (size_t i = 0; i < win->events.len; i++) {
-        dvui_Event *e = &win->events.items[i];
+        dvui_Event* e = &win->events.items[i];
         if (e->num > event_num && e->kind == DVUI_EVENT_MOUSE) {
             const dvui_MouseActionKind a = e->evt.mouse.action;
             if (a != DVUI_MOUSE_WHEEL_X && a != DVUI_MOUSE_WHEEL_Y) e->target_widget_id = widget_id;
@@ -296,8 +296,8 @@ void dvui_window_capture_events(dvui_Window *win, uint16_t event_num, dvui_Id wi
 // Window – vytvoření a zrušení (DVUI: Window.init/deinit)
 // ---------------------------------------------------------------------------
 
-dvui_Window *dvui_window_create(dvui_Backend backend) {
-    dvui_Window *win = calloc(1, sizeof(dvui_Window));
+dvui_Window* dvui_window_create(dvui_Backend backend) {
+    dvui_Window* win = calloc(1, sizeof(dvui_Window));
     win->backend = backend;
     win->theme = dvui_theme_adwaita_light();
     win->content_scale = 1.0f;
@@ -318,7 +318,7 @@ dvui_Window *dvui_window_create(dvui_Backend backend) {
     return win;
 }
 
-void dvui_window_destroy(dvui_Window *win) {
+void dvui_window_destroy(dvui_Window* win) {
     if (!win) return;
     dvui_map_free(&win->min_sizes);
     dvui_map_free(&win->data_store);
@@ -331,27 +331,27 @@ void dvui_window_destroy(dvui_Window *win) {
     free(win);
 }
 
-void dvui_window_theme_set(dvui_Window *win, dvui_Theme theme) { win->theme = theme; }
-void dvui_window_open_flag_set(dvui_Window *win, bool *open_flag) { win->open_flag = open_flag; }
+void dvui_window_theme_set(dvui_Window* win, dvui_Theme theme) { win->theme = theme; }
+void dvui_window_open_flag_set(dvui_Window* win, bool* open_flag) { win->open_flag = open_flag; }
 
 // ---------------------------------------------------------------------------
 // Datové úložiště (DVUI: Data.zig, dvui.dataGet/dataSet …)
 // ---------------------------------------------------------------------------
 
-static dvui_Window *win_or_current(dvui_Window *win) { return win ? win : dvui_current_window(); }
+static dvui_Window* win_or_current(dvui_Window* win) { return win ? win : dvui_current_window(); }
 
-static void data_trash(dvui_Window *win, void *ptr) {
+static void data_trash(dvui_Window* win, void* ptr) {
     if (!ptr) return;
     if (win->data_trash_len == win->data_trash_cap) {
         win->data_trash_cap = win->data_trash_cap ? win->data_trash_cap * 2 : 16;
-        win->data_trash = realloc(win->data_trash, win->data_trash_cap * sizeof(void *));
+        win->data_trash = realloc(win->data_trash, win->data_trash_cap * sizeof(void*));
     }
     win->data_trash[win->data_trash_len++] = ptr;
 }
 
-void dvui_data_set(dvui_Window *win, dvui_Id id, const char *key, const void *value, size_t size) {
+void dvui_data_set(dvui_Window* win, dvui_Id id, const char* key, const void* value, size_t size) {
     win = win_or_current(win);
-    dvui_MapEntry *e = dvui_map_get_or_put(&win->data_store, dvui_id_update(id, key));
+    dvui_MapEntry* e = dvui_map_get_or_put(&win->data_store, dvui_id_update(id, key));
     e->used = true;
     if (e->ptr && e->size == size) {
         // stejná velikost: přepíšeme na místě, ukazatele zůstanou platné
@@ -365,9 +365,9 @@ void dvui_data_set(dvui_Window *win, dvui_Id id, const char *key, const void *va
     if (size) memcpy(e->ptr, value, size);
 }
 
-void *dvui_data_get(dvui_Window *win, dvui_Id id, const char *key, size_t size) {
+void* dvui_data_get(dvui_Window* win, dvui_Id id, const char* key, size_t size) {
     win = win_or_current(win);
-    dvui_MapEntry *e = dvui_map_get(&win->data_store, dvui_id_update(id, key));
+    dvui_MapEntry* e = dvui_map_get(&win->data_store, dvui_id_update(id, key));
     if (!e) return nullptr;
     e->used = true;
     if (e->size != size) {
@@ -377,17 +377,17 @@ void *dvui_data_get(dvui_Window *win, dvui_Id id, const char *key, size_t size) 
     return e->ptr;
 }
 
-void *dvui_data_get_ptr_default(dvui_Window *win, dvui_Id id, const char *key, size_t size, const void *def) {
+void* dvui_data_get_ptr_default(dvui_Window* win, dvui_Id id, const char* key, size_t size, const void* def) {
     win = win_or_current(win);
-    void *p = dvui_data_get(win, id, key, size);
+    void* p = dvui_data_get(win, id, key, size);
     if (p) return p;
     dvui_data_set(win, id, key, def, size);
     return dvui_data_get(win, id, key, size);
 }
 
-void *dvui_data_get_slice(dvui_Window *win, dvui_Id id, const char *key, size_t *size) {
+void* dvui_data_get_slice(dvui_Window* win, dvui_Id id, const char* key, size_t* size) {
     win = win_or_current(win);
-    dvui_MapEntry *e = dvui_map_get(&win->data_store, dvui_id_update(id, key));
+    dvui_MapEntry* e = dvui_map_get(&win->data_store, dvui_id_update(id, key));
     if (!e) {
         *size = 0;
         return nullptr;
@@ -397,10 +397,10 @@ void *dvui_data_get_slice(dvui_Window *win, dvui_Id id, const char *key, size_t 
     return e->ptr;
 }
 
-void dvui_data_remove(dvui_Window *win, dvui_Id id, const char *key) {
+void dvui_data_remove(dvui_Window* win, dvui_Id id, const char* key) {
     win = win_or_current(win);
     const uint64_t k = dvui_id_update(id, key);
-    dvui_MapEntry *e = dvui_map_get(&win->data_store, k);
+    dvui_MapEntry* e = dvui_map_get(&win->data_store, k);
     if (!e) return;
     // blob může někdo ještě tento snímek používat – jen do koše
     data_trash(win, e->ptr);
@@ -409,10 +409,10 @@ void dvui_data_remove(dvui_Window *win, dvui_Id id, const char *key) {
 }
 
 // DVUI: Data.reset – zahodí data nepoužitá od minulého resetu.
-static void data_store_reset(dvui_Window *win) {
-    dvui_Map *m = &win->data_store;
+static void data_store_reset(dvui_Window* win) {
+    dvui_Map* m = &win->data_store;
     for (size_t i = 0; i < m->cap; i++) {
-        dvui_MapEntry *e = &m->entries[i];
+        dvui_MapEntry* e = &m->entries[i];
         if (e->state != 1) continue;
         if (e->used) {
             e->used = false;
@@ -425,10 +425,10 @@ static void data_store_reset(dvui_Window *win) {
 }
 
 // DVUI: TrackingAutoHashMap(.put_only).reset – min. velikosti
-static void min_sizes_reset(dvui_Window *win) {
-    dvui_Map *m = &win->min_sizes;
+static void min_sizes_reset(dvui_Window* win) {
+    dvui_Map* m = &win->min_sizes;
     for (size_t i = 0; i < m->cap; i++) {
-        dvui_MapEntry *e = &m->entries[i];
+        dvui_MapEntry* e = &m->entries[i];
         if (e->state != 1) continue;
         if (e->used) {
             e->used = false;
@@ -438,8 +438,8 @@ static void min_sizes_reset(dvui_Window *win) {
     }
 }
 
-bool dvui_min_size_get(dvui_Id id, dvui_Size *out) {
-    dvui_MapEntry *e = dvui_map_get(&dvui_current_window()->min_sizes, id);
+bool dvui_min_size_get(dvui_Id id, dvui_Size* out) {
+    dvui_MapEntry* e = dvui_map_get(&dvui_current_window()->min_sizes, id);
     if (!e) return false;
     if (out) memcpy(out, e->ptr, sizeof(dvui_Size));
     return true;
@@ -451,7 +451,7 @@ bool dvui_first_frame(dvui_Id id) { return !dvui_min_size_get(id, nullptr); }
 // Window.begin (DVUI: Window.begin)
 // ---------------------------------------------------------------------------
 
-void dvui_window_begin(dvui_Window *win, int64_t time_ns) {
+void dvui_window_begin(dvui_Window* win, int64_t time_ns) {
     // Když čas skočí dozadu, zůstaneme na aktuálním frame_time_ns a pro
     // animace použijeme 10 ms.
     uint32_t micros_since_last = 10000;
@@ -515,9 +515,9 @@ void dvui_window_begin(dvui_Window *win, int64_t time_ns) {
 // Přidávání událostí (DVUI: Window.addEvent*)
 // ---------------------------------------------------------------------------
 
-void dvui_window_modifiers_set(dvui_Window *win, unsigned mod) { win->modifiers = mod; }
+void dvui_window_modifiers_set(dvui_Window* win, unsigned mod) { win->modifiers = mod; }
 
-bool dvui_window_add_event_key(dvui_Window *win, dvui_Key code, dvui_KeyAction action, unsigned mod) {
+bool dvui_window_add_event_key(dvui_Window* win, dvui_Key code, dvui_KeyAction action, unsigned mod) {
     position_mouse_event_remove(win);
     win->modifiers = mod;
     win->event_num++;
@@ -532,7 +532,7 @@ bool dvui_window_add_event_key(dvui_Window *win, dvui_Key code, dvui_KeyAction a
 }
 
 // DVUI: Window.addEventFocus
-static bool add_event_focus(dvui_Window *win, dvui_PointPhysical pt, dvui_Button button) {
+static bool add_event_focus(dvui_Window* win, dvui_PointPhysical pt, dvui_Button button) {
     position_mouse_event_remove(win);
     const dvui_Id win_id = dvui_subwindows_window_for(&win->subwindows, pt);
 
@@ -556,7 +556,7 @@ static bool add_event_focus(dvui_Window *win, dvui_PointPhysical pt, dvui_Button
     return win->wd.id != win_id;
 }
 
-bool dvui_window_add_event_mouse_motion(dvui_Window *win, dvui_PointPhysical pt) {
+bool dvui_window_add_event_mouse_motion(dvui_Window* win, dvui_PointPhysical pt) {
     position_mouse_event_remove(win);
     const dvui_PointPhysical dp = dvui_point_diff(pt, win->mouse_pt);
     win->mouse_pt = pt;
@@ -573,7 +573,7 @@ bool dvui_window_add_event_mouse_motion(dvui_Window *win, dvui_PointPhysical pt)
     return win->wd.id != win_id;
 }
 
-bool dvui_window_add_event_mouse_button(dvui_Window *win, dvui_Button b, dvui_MouseActionKind action) {
+bool dvui_window_add_event_mouse_button(dvui_Window* win, dvui_Button b, dvui_MouseActionKind action) {
     const dvui_Id target_id = capture_id(win);
     const dvui_Id win_id = dvui_subwindows_window_for(&win->subwindows, win->mouse_pt);
 
@@ -593,7 +593,7 @@ bool dvui_window_add_event_mouse_button(dvui_Window *win, dvui_Button b, dvui_Mo
     return win->wd.id != win_id;
 }
 
-bool dvui_window_add_event_mouse_wheel(dvui_Window *win, float ticks, dvui_Direction dir) {
+bool dvui_window_add_event_mouse_wheel(dvui_Window* win, float ticks, dvui_Direction dir) {
     position_mouse_event_remove(win);
     const dvui_Id win_id = dvui_subwindows_window_for(&win->subwindows, win->mouse_pt);
     dvui_MouseActionKind action = DVUI_MOUSE_WHEEL_X;
@@ -608,21 +608,21 @@ bool dvui_window_add_event_mouse_wheel(dvui_Window *win, float ticks, dvui_Direc
     return win->wd.id != win_id;
 }
 
-void dvui_window_add_event_window(dvui_Window *win, dvui_WindowAction action) {
+void dvui_window_add_event_window(dvui_Window* win, dvui_WindowAction action) {
     position_mouse_event_remove(win);
     win->event_num++;
     events_append(win, (dvui_Event){.num = win->event_num, .kind = DVUI_EVENT_WINDOW, .evt.window = action});
     position_mouse_event_add(win);
 }
 
-void dvui_window_add_event_app_quit(dvui_Window *win) {
+void dvui_window_add_event_app_quit(dvui_Window* win) {
     position_mouse_event_remove(win);
     win->event_num++;
     events_append(win, (dvui_Event){.num = win->event_num, .kind = DVUI_EVENT_APP_QUIT});
     position_mouse_event_add(win);
 }
 
-dvui_Cursor dvui_window_cursor_requested(const dvui_Window *win) {
+dvui_Cursor dvui_window_cursor_requested(const dvui_Window* win) {
     if (win->dragging.has_cursor && win->dragging.state == DVUI_DRAG_STATE_DRAGGING) return win->dragging.cursor;
     return win->has_cursor_requested ? win->cursor_requested : DVUI_CURSOR_ARROW;
 }
@@ -631,8 +631,8 @@ dvui_Cursor dvui_window_cursor_requested(const dvui_Window *win) {
 // Renderování (DVUI: render.zig, Window.renderCommands, Window.addRenderCommand)
 // ---------------------------------------------------------------------------
 
-void dvui_window_add_render_command(dvui_Window *win, dvui_RenderCommand cmd, bool after) {
-    dvui_Subwindow *sw = dvui_subwindows_current(&win->subwindows);
+void dvui_window_add_render_command(dvui_Window* win, dvui_RenderCommand cmd, bool after) {
+    dvui_Subwindow* sw = dvui_subwindows_current(&win->subwindows);
     if (!sw) sw = &win->subwindows.stack[0];
     if (after) {
         dvui_render_cmd_list_append(win->defer_render_cmds_after ? win->defer_render_cmds_after : &sw->render_cmds_after, cmd);
@@ -647,7 +647,7 @@ static dvui_RectPhysical snap_rect(dvui_RectPhysical r) {
 }
 
 // DVUI: render.renderTriangles – vykreslí obdélník s ohledem na clip.
-static void render_rect_now(dvui_Window *win, dvui_RectPhysical r, dvui_Color color) {
+static void render_rect_now(dvui_Window* win, dvui_RectPhysical r, dvui_Color color) {
     if (dvui_rect_empty(r)) return;
     if (dvui_rect_empty(dvui_rect_intersect(win->clip_rect, r))) return;
 
@@ -664,7 +664,7 @@ static void render_rect_now(dvui_Window *win, dvui_RectPhysical r, dvui_Color co
     const dvui_RectPhysical inter = dvui_rect_intersect(bounds, clipping);
     if (dvui_rect_empty(inter)) return;
 
-    const dvui_RectPhysical *clipr = nullptr;
+    const dvui_RectPhysical* clipr = nullptr;
     if (!(inter.x == bounds.x && inter.y == bounds.y && fabsf(inter.w - bounds.w) < 0.001f && fabsf(inter.h - bounds.h) < 0.001f)) {
         clipr = &clipping;
     }
@@ -687,7 +687,7 @@ static void render_rect_now(dvui_Window *win, dvui_RectPhysical r, dvui_Color co
 }
 
 void dvui_render_fill_rect(dvui_RectPhysical r, dvui_Color color, bool after) {
-    dvui_Window *win = dvui_current_window();
+    dvui_Window* win = dvui_current_window();
     if (dvui_rect_empty(dvui_clip_get())) return;
     if (after || !win->rendering) {
         dvui_window_add_render_command(win, (dvui_RenderCommand){.rect = r, .color = color, .clip = win->clip_rect, .alpha = win->alpha, .snap = win->snap_to_pixels}, after);
@@ -710,11 +710,11 @@ void dvui_render_stroke_rect(dvui_RectPhysical r, float thickness, dvui_Color co
 }
 
 // DVUI: Window.renderCommands
-static void render_commands(dvui_Window *win, const dvui_RenderCmdList *queue) {
+static void render_commands(dvui_Window* win, const dvui_RenderCmdList* queue) {
     const dvui_RectPhysical old_clip = win->clip_rect;
     const float old_alpha = win->alpha;
     for (size_t i = 0; i < queue->len; i++) {
-        const dvui_RenderCommand *c = &queue->items[i];
+        const dvui_RenderCommand* c = &queue->items[i];
         win->clip_rect = c->clip;
         win->alpha = c->alpha;
         render_rect_now(win, c->snap ? snap_rect(c->rect) : c->rect, dvui_color_opacity(c->color, c->alpha));
@@ -723,10 +723,10 @@ static void render_commands(dvui_Window *win, const dvui_RenderCmdList *queue) {
     win->alpha = old_alpha;
 }
 
-void dvui_render_front_to_back_init_reset(dvui_RenderFrontToBack *self) {
-    dvui_Window *win = dvui_current_window();
-    dvui_RenderCmdList *cmds = dvui_frame_alloc(sizeof(dvui_RenderCmdList));
-    dvui_RenderCmdList *cmds_after = dvui_frame_alloc(sizeof(dvui_RenderCmdList));
+void dvui_render_front_to_back_init_reset(dvui_RenderFrontToBack* self) {
+    dvui_Window* win = dvui_current_window();
+    dvui_RenderCmdList* cmds = dvui_frame_alloc(sizeof(dvui_RenderCmdList));
+    dvui_RenderCmdList* cmds_after = dvui_frame_alloc(sizeof(dvui_RenderCmdList));
     *cmds = (dvui_RenderCmdList){0};
     *cmds_after = (dvui_RenderCmdList){0};
     *self = (dvui_RenderFrontToBack){
@@ -741,27 +741,27 @@ void dvui_render_front_to_back_init_reset(dvui_RenderFrontToBack *self) {
     win->defer_render_cmds_after = nullptr;
 }
 
-void dvui_render_front_to_back_deinit(dvui_RenderFrontToBack *self) {
-    dvui_Window *win = dvui_current_window();
+void dvui_render_front_to_back_deinit(dvui_RenderFrontToBack* self) {
+    dvui_Window* win = dvui_current_window();
     // obnovíme předchozí fronty
     win->rendering = self->prev_rendering;
     win->defer_render_cmds = self->prev_dr_cmds;
     win->defer_render_cmds_after = self->prev_dr_cmds_after;
 
     // vše jde do fronty „after“
-    dvui_Subwindow *sw = dvui_subwindows_current(&win->subwindows);
+    dvui_Subwindow* sw = dvui_subwindows_current(&win->subwindows);
     if (!sw) sw = &win->subwindows.stack[0];
-    dvui_RenderCmdList *target = win->defer_render_cmds_after ? win->defer_render_cmds_after : &sw->render_cmds_after;
-    const dvui_RenderCmdList *after = self->render_cmds_after;
-    const dvui_RenderCmdList *normal = self->render_cmds;
+    dvui_RenderCmdList* target = win->defer_render_cmds_after ? win->defer_render_cmds_after : &sw->render_cmds_after;
+    const dvui_RenderCmdList* after = self->render_cmds_after;
+    const dvui_RenderCmdList* normal = self->render_cmds;
     dvui_render_cmd_list_insert_slice(target, 0, after->items, after->len);
     dvui_render_cmd_list_insert_slice(target, 0, normal->items, normal->len);
 }
 
 // DVUI: Window.endRendering
-static void end_rendering(dvui_Window *win) {
+static void end_rendering(dvui_Window* win) {
     for (size_t i = 0; i < win->subwindows.len; i++) {
-        dvui_Subwindow *sw = &win->subwindows.stack[i];
+        dvui_Subwindow* sw = &win->subwindows.stack[i];
         render_commands(win, &sw->render_cmds);
         sw->render_cmds = (dvui_RenderCmdList){0};
         render_commands(win, &sw->render_cmds_after);
@@ -773,14 +773,14 @@ static void end_rendering(dvui_Window *win) {
 // Window.end (DVUI: Window.end)
 // ---------------------------------------------------------------------------
 
-int64_t dvui_window_end(dvui_Window *win) {
+int64_t dvui_window_end(dvui_Window* win) {
     // všechny widgety musí vrátit rodiče
     dvui_parent_reset(win->wd.id, window_widget(win));
 
     end_rendering(win);
 
     for (size_t i = 0; i < win->events.len; i++) {
-        dvui_Event *e = &win->events.items[i];
+        dvui_Event* e = &win->events.items[i];
         if (e->handled) continue;
 
         if (e->kind == DVUI_EVENT_MOUSE && e->evt.mouse.action == DVUI_MOUSE_RELEASE && win->dragging.state == DVUI_DRAG_STATE_DRAGGING && win->dragging.button == e->evt.mouse.button) {
@@ -814,10 +814,10 @@ int64_t dvui_window_end(dvui_Window *win) {
     }
 
     // fokusované subwindow zmizelo → fokus na nejvyšší „normální“ okno
-    dvui_Subwindow *focused_sw = dvui_subwindows_focused(&win->subwindows);
+    dvui_Subwindow* focused_sw = dvui_subwindows_focused(&win->subwindows);
     if (focused_sw && !focused_sw->used) {
         for (size_t i = win->subwindows.len; i > 0; i--) {
-            const dvui_Subwindow *sw = &win->subwindows.stack[i - 1];
+            const dvui_Subwindow* sw = &win->subwindows.stack[i - 1];
             if (sw->used && !sw->stay_above_parent_window) {
                 dvui_focus_subwindow(sw->id, nullptr);
                 break;
@@ -866,11 +866,11 @@ dvui_Widget dvui_parent_get(void) { return dvui_current_window()->current_parent
 void dvui_parent_set(dvui_Widget w) { dvui_current_window()->current_parent = w; }
 
 void dvui_parent_reset(dvui_Id id, dvui_Widget prev_parent) {
-    dvui_Window *cw = dvui_current_window();
-    const dvui_WidgetData *cur = dvui_widget_data(cw->current_parent);
+    dvui_Window* cw = dvui_current_window();
+    const dvui_WidgetData* cur = dvui_widget_data(cw->current_parent);
     if (id != cur->id) {
         DVUI_LOG_ERR("widget is not closed within its parent. did you forget to call `deinit`?");
-        const dvui_WidgetData *wd = cur;
+        const dvui_WidgetData* wd = cur;
         for (;;) {
             DVUI_LOG_ERR("  %s:%d %s %llx", wd->src.file, wd->src.line, wd->options.name ? wd->options.name : "???", (unsigned long long)wd->id);
             if (dvui_widget_data_is_root(wd)) break;
@@ -880,7 +880,7 @@ void dvui_parent_reset(dvui_Id id, dvui_Widget prev_parent) {
     cw->current_parent = prev_parent;
 }
 
-void dvui_refresh(dvui_Window *win, dvui_Src src, dvui_Id id) {
+void dvui_refresh(dvui_Window* win, dvui_Src src, dvui_Id id) {
     (void)src;
     (void)id;
     if (win) {
@@ -897,12 +897,12 @@ dvui_RectPhysical dvui_window_rect_pixels(void) { return dvui_current_window()->
 dvui_RectScale dvui_window_rect_scale(void) { return window_rect_scale(dvui_current_window()); }
 float dvui_window_natural_scale(void) { return dvui_current_window()->natural_scale; }
 float dvui_seconds_since_last_frame(void) { return dvui_current_window()->secs_since_last_frame; }
-const dvui_Theme *dvui_theme_get(void) { return &dvui_current_window()->theme; }
+const dvui_Theme* dvui_theme_get(void) { return &dvui_current_window()->theme; }
 
 dvui_RectPhysical dvui_clip_get(void) { return dvui_current_window()->clip_rect; }
 
 dvui_RectPhysical dvui_clip(dvui_RectPhysical r) {
-    dvui_Window *cw = dvui_current_window();
+    dvui_Window* cw = dvui_current_window();
     const dvui_RectPhysical ret = cw->clip_rect;
     dvui_clip_set(dvui_rect_intersect(cw->clip_rect, r));
     return ret;
@@ -911,7 +911,7 @@ dvui_RectPhysical dvui_clip(dvui_RectPhysical r) {
 void dvui_clip_set(dvui_RectPhysical r) { dvui_current_window()->clip_rect = r; }
 
 float dvui_alpha(float mult) {
-    dvui_Window *cw = dvui_current_window();
+    dvui_Window* cw = dvui_current_window();
     const float ret = cw->alpha;
     dvui_alpha_set(cw->alpha * mult);
     return ret;
@@ -926,21 +926,21 @@ void dvui_subwindow_add(dvui_Id id, dvui_Rect rect, dvui_RectPhysical rect_pixel
     dvui_subwindows_add(&dvui_current_window()->subwindows, id, rect, rect_pixels, modal, stay_above_parent_window, mouse_events);
 }
 
-dvui_SubwindowCurrentSetReturn dvui_subwindow_current_set(dvui_Id id, const dvui_RectNatural *rect) {
+dvui_SubwindowCurrentSetReturn dvui_subwindow_current_set(dvui_Id id, const dvui_RectNatural* rect) {
     return dvui_subwindows_set_current(&dvui_current_window()->subwindows, id, rect);
 }
 
 dvui_Id dvui_subwindow_current_id(void) { return dvui_current_window()->subwindows.current_id; }
 dvui_Id dvui_focused_subwindow_id(void) { return dvui_current_window()->subwindows.focused_id; }
 
-void dvui_focus_subwindow(dvui_Id subwindow_id, const uint16_t *event_num) {
-    dvui_Window *win = dvui_current_window();
+void dvui_focus_subwindow(dvui_Id subwindow_id, const uint16_t* event_num) {
+    dvui_Window* win = dvui_current_window();
     const dvui_Id win_id = subwindow_id ? subwindow_id : win->subwindows.current_id;
     if (win->subwindows.focused_id == win_id) return;
     win->subwindows.focused_id = win_id;
     win->extra_frames_needed = 1;
     if (event_num) {
-        dvui_Subwindow *sw = dvui_subwindows_focused(&win->subwindows);
+        dvui_Subwindow* sw = dvui_subwindows_focused(&win->subwindows);
         if (sw) dvui_window_focus_events(win, *event_num, sw->focused_widget_id);
     }
 }
@@ -952,11 +952,11 @@ void dvui_raise_subwindow(dvui_Id subwindow_id) {
 }
 
 // DVUI: Window.focusWidget (bez klávesové navigace tab_index)
-void dvui_focus_widget(dvui_Id id, dvui_Id subwindow_id, const uint16_t *event_num) {
-    dvui_Window *win = dvui_current_window();
+void dvui_focus_widget(dvui_Id id, dvui_Id subwindow_id, const uint16_t* event_num) {
+    dvui_Window* win = dvui_current_window();
     win->scroll_to_focused = false;
     const dvui_Id swid = subwindow_id ? subwindow_id : win->subwindows.current_id;
-    dvui_Subwindow *sw = dvui_subwindows_get(&win->subwindows, swid);
+    dvui_Subwindow* sw = dvui_subwindows_get(&win->subwindows, swid);
     if (!sw) return;
     if (sw->focused_widget_id == id) return;
     sw->focused_widget_id = id;
@@ -970,7 +970,7 @@ void dvui_focus_widget(dvui_Id id, dvui_Id subwindow_id, const uint16_t *event_n
             win->last_focused_id_in_subwindow = id;
         } else {
             // projdeme řetězec rodičů
-            const dvui_WidgetData *wd = dvui_widget_data(win->current_parent);
+            const dvui_WidgetData* wd = dvui_widget_data(win->current_parent);
             for (;;) {
                 if (wd->id == id) {
                     win->last_focused_id_this_frame = id;
@@ -987,8 +987,8 @@ void dvui_focus_widget(dvui_Id id, dvui_Id subwindow_id, const uint16_t *event_n
 dvui_Id dvui_focused_widget_id(void) { return focused_widget_id_win(dvui_current_window()); }
 
 dvui_Id dvui_focused_widget_id_in_current_subwindow(void) {
-    dvui_Window *cw = dvui_current_window();
-    dvui_Subwindow *sw = dvui_subwindows_current(&cw->subwindows);
+    dvui_Window* cw = dvui_current_window();
+    dvui_Subwindow* sw = dvui_subwindows_current(&cw->subwindows);
     if (!sw) sw = &cw->subwindows.stack[0];
     return sw->focused_widget_id;
 }
@@ -1001,7 +1001,7 @@ dvui_Id dvui_last_focused_id_in_frame_since(dvui_Id prev) {
 }
 
 void dvui_cursor_set(dvui_Cursor cursor) {
-    dvui_Window *cw = dvui_current_window();
+    dvui_Window* cw = dvui_current_window();
     if (!cw->has_cursor_requested) {
         cw->has_cursor_requested = true;
         cw->cursor_requested = cursor;
@@ -1010,8 +1010,8 @@ void dvui_cursor_set(dvui_Cursor cursor) {
 
 // --- Capture (DVUI: dvui.captureMouse …, jen jeden ukazatel – myš)
 
-void dvui_capture_mouse(const dvui_WidgetData *wd, uint16_t event_num) {
-    dvui_Window *cw = dvui_current_window();
+void dvui_capture_mouse(const dvui_WidgetData* wd, uint16_t event_num) {
+    dvui_Window* cw = dvui_current_window();
     if (wd) {
         cw->has_capture = true;
         cw->capture = (dvui_CaptureMouse){
@@ -1028,11 +1028,11 @@ void dvui_capture_mouse(const dvui_WidgetData *wd, uint16_t event_num) {
 }
 
 void dvui_capture_mouse_maintain(dvui_CaptureMouse cm) {
-    dvui_Window *cw = dvui_current_window();
+    dvui_Window* cw = dvui_current_window();
     if (!cw->has_capture || cw->capture.id != cm.id) return;
     // capture udržíme jen nad nejvyšším modálním oknem
     for (size_t i = cw->subwindows.len; i > 0; i--) {
-        const dvui_Subwindow *sw = &cw->subwindows.stack[i - 1];
+        const dvui_Subwindow* sw = &cw->subwindows.stack[i - 1];
         if (sw->id == cw->subwindows.current_id) {
             cw->capture.rect = cm.rect;
             cw->captured_last_frame = true;
@@ -1047,12 +1047,12 @@ void dvui_capture_mouse_maintain(dvui_CaptureMouse cm) {
 }
 
 bool dvui_captured(dvui_Id id) {
-    const dvui_Window *cw = dvui_current_window();
+    const dvui_Window* cw = dvui_current_window();
     return cw->has_capture && cw->capture.id == id;
 }
 
-static bool capture_mouse_for(dvui_Id id, dvui_CaptureMouse *out) {
-    const dvui_Window *cw = dvui_current_window();
+static bool capture_mouse_for(dvui_Id id, dvui_CaptureMouse* out) {
+    const dvui_Window* cw = dvui_current_window();
     if (cw->has_capture && cw->capture.id == id) {
         *out = cw->capture;
         return true;
@@ -1065,12 +1065,12 @@ static bool capture_mouse_for(dvui_Id id, dvui_CaptureMouse *out) {
 static const float drag_threshold = 3.0f;
 
 void dvui_drag_pre_start(dvui_Button b, dvui_PointPhysical p, dvui_DragStartOptions options) {
-    dvui_Dragging *d = &dvui_current_window()->dragging;
+    dvui_Dragging* d = &dvui_current_window()->dragging;
     *d = (dvui_Dragging){.state = DVUI_DRAG_STATE_PRESTART, .button = b, .pt = p, .offset = options.offset, .name = options.name, .has_cursor = options.has_cursor, .cursor = options.cursor};
 }
 
 void dvui_drag_start(dvui_Button b, dvui_PointPhysical p, dvui_DragStartOptions options) {
-    dvui_Dragging *d = &dvui_current_window()->dragging;
+    dvui_Dragging* d = &dvui_current_window()->dragging;
     *d = (dvui_Dragging){.state = DVUI_DRAG_STATE_DRAGGING, .button = b, .pt = p, .offset = options.offset, .name = options.name, .has_cursor = options.has_cursor, .cursor = options.cursor};
 }
 
@@ -1079,9 +1079,9 @@ dvui_PointPhysical dvui_drag_offset(dvui_Button b) {
     return dvui_current_window()->dragging.offset;
 }
 
-bool dvui_dragging(dvui_EventMouse me, const char *name, dvui_PointPhysical *out) {
-    dvui_Window *cw = dvui_current_window();
-    dvui_Dragging *d = &cw->dragging;
+bool dvui_dragging(dvui_EventMouse me, const char* name, dvui_PointPhysical* out) {
+    dvui_Window* cw = dvui_current_window();
+    dvui_Dragging* d = &cw->dragging;
     if (name && strcmp(name, d->name ? d->name : "") != 0) return false;
     switch (d->state) {
     case DVUI_DRAG_STATE_NONE: return false;
@@ -1108,25 +1108,25 @@ bool dvui_dragging(dvui_EventMouse me, const char *name, dvui_PointPhysical *out
 
 void dvui_drag_end(dvui_Button b) {
     (void)b;
-    dvui_Dragging *d = &dvui_current_window()->dragging;
+    dvui_Dragging* d = &dvui_current_window()->dragging;
     d->state = DVUI_DRAG_STATE_NONE;
     d->has_cursor = false;
 }
 
 // --- Události (DVUI: dvui.events, eventMatch, clicked)
 
-dvui_Event *dvui_events(size_t *count) {
-    dvui_Window *cw = dvui_current_window();
+dvui_Event* dvui_events(size_t* count) {
+    dvui_Window* cw = dvui_current_window();
     *count = cw->events.len;
     return cw->events.items;
 }
 
-void dvui_event_handle(dvui_Event *e, const dvui_WidgetData *wd) {
+void dvui_event_handle(dvui_Event* e, const dvui_WidgetData* wd) {
     (void)wd;
     e->handled = true;
 }
 
-bool dvui_event_match(dvui_Event *e, dvui_EventMatchOptions opts) {
+bool dvui_event_match(dvui_Event* e, dvui_EventMatchOptions opts) {
     if (e->handled) return false;
 
     switch (e->kind) {
@@ -1141,7 +1141,7 @@ bool dvui_event_match(dvui_Event *e, dvui_EventMatchOptions opts) {
         }
         break;
     case DVUI_EVENT_MOUSE: {
-        const dvui_EventMouse *me = &e->evt.mouse;
+        const dvui_EventMouse* me = &e->evt.mouse;
         bool other_capture = false;
         if (e->target_widget_id) {
             // událost během capture
@@ -1149,7 +1149,7 @@ bool dvui_event_match(dvui_Event *e, dvui_EventMatchOptions opts) {
             other_capture = true;
         }
 
-        const dvui_Dragging *d = &dvui_current_window()->dragging;
+        const dvui_Dragging* d = &dvui_current_window()->dragging;
         if (d->state == DVUI_DRAG_STATE_DRAGGING && d->name && (!opts.drag_name || strcmp(d->name, opts.drag_name) != 0)) {
             // probíhá tažení mezi widgety, o kterém nevíme
             return false;
@@ -1176,17 +1176,17 @@ bool dvui_event_match(dvui_Event *e, dvui_EventMatchOptions opts) {
     return true;
 }
 
-bool dvui_event_match_simple(dvui_Event *e, dvui_WidgetData *wd) {
+bool dvui_event_match_simple(dvui_Event* e, dvui_WidgetData* wd) {
     return dvui_event_match(e, (dvui_EventMatchOptions){.id = wd->id, .r = dvui_widget_data_border_rect_scale(wd).r});
 }
 
-bool dvui_clicked(const dvui_WidgetData *wd, dvui_ClickOptions opts) {
+bool dvui_clicked(const dvui_WidgetData* wd, dvui_ClickOptions opts) {
     bool click = false;
     const dvui_RectPhysical click_rect = opts.rect.has ? opts.rect.v : dvui_widget_data_border_rect_scale(wd).r;
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = wd->id, .r = click_rect})) continue;
 
         if (e->kind == DVUI_EVENT_MOUSE) {
@@ -1232,12 +1232,12 @@ bool dvui_clicked(const dvui_WidgetData *wd, dvui_ClickOptions opts) {
 
 // --- stateFade / hoverFade (DVUI: dvui.stateFade)
 
-float dvui_state_fade(dvui_Id id, const char *key, bool on, float secs) {
+float dvui_state_fade(dvui_Id id, const char* key, bool on, float secs) {
     const float target = on ? 1.0f : 0.0f;
     if (secs <= 0.0f) return target;
 
     // -1 = minule cíl 0, -2 = minule cíl 1, >= 0 = právě probíhá
-    float *cur = DVUI_DATA_GET_PTR_DEFAULT(id, key, float, -1.0f);
+    float* cur = DVUI_DATA_GET_PTR_DEFAULT(id, key, float, -1.0f);
 
     if ((*cur == -1 && target == 1) || (*cur == -2 && target == 0)) {
         // začíná nový přechod
@@ -1263,31 +1263,31 @@ float dvui_hover_fade(dvui_Id id, bool hovered) { return dvui_state_fade(id, "__
 
 // --- Alokace widgetů (DVUI: widgetAlloc/widgetFree/widgetIsAllocated)
 
-void *dvui_widget_alloc(size_t size) {
-    dvui_Window *cw = dvui_current_window();
-    void *p = calloc(1, size);
+void* dvui_widget_alloc(size_t size) {
+    dvui_Window* cw = dvui_current_window();
+    void* p = calloc(1, size);
     if (cw->widget_allocs_len == cw->widget_allocs_cap) {
         cw->widget_allocs_cap = cw->widget_allocs_cap ? cw->widget_allocs_cap * 2 : 32;
-        cw->widget_allocs = realloc(cw->widget_allocs, cw->widget_allocs_cap * sizeof(void *));
+        cw->widget_allocs = realloc(cw->widget_allocs, cw->widget_allocs_cap * sizeof(void*));
     }
     cw->widget_allocs[cw->widget_allocs_len++] = p;
     return p;
 }
 
-bool dvui_widget_is_allocated(const void *ptr) {
-    const dvui_Window *cw = dvui_current_window();
+bool dvui_widget_is_allocated(const void* ptr) {
+    const dvui_Window* cw = dvui_current_window();
     for (size_t i = cw->widget_allocs_len; i > 0; i--) {
         if (cw->widget_allocs[i - 1] == ptr) return true;
     }
     return false;
 }
 
-void dvui_widget_free(void *ptr) {
-    dvui_Window *cw = dvui_current_window();
+void dvui_widget_free(void* ptr) {
+    dvui_Window* cw = dvui_current_window();
     for (size_t i = cw->widget_allocs_len; i > 0; i--) {
         if (cw->widget_allocs[i - 1] == ptr) {
             free(ptr);
-            memmove(&cw->widget_allocs[i - 1], &cw->widget_allocs[i], (cw->widget_allocs_len - i) * sizeof(void *));
+            memmove(&cw->widget_allocs[i - 1], &cw->widget_allocs[i], (cw->widget_allocs_len - i) * sizeof(void*));
             cw->widget_allocs_len--;
             return;
         }

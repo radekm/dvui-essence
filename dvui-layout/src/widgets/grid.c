@@ -23,34 +23,34 @@ static const float row_offset_gap = 1000;
 // vtable
 // ---------------------------------------------------------------------------
 
-static dvui_WidgetData *grid_data(void *ptr) { return &((dvui_GridWidget *)ptr)->wd; }
+static dvui_WidgetData* grid_data(void* ptr) { return &((dvui_GridWidget*)ptr)->wd; }
 
-static dvui_Rect grid_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+static dvui_Rect grid_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
     (void)id;
-    dvui_GridWidget *self = ptr;
+    dvui_GridWidget* self = ptr;
     return dvui_place_in(dvui_rect_just_size(dvui_widget_data_content_rect(&self->wd)), min_size, e, g);
 }
 
-static dvui_RectScale grid_screen_rect_scale(void *ptr, dvui_Rect r) {
-    dvui_GridWidget *self = ptr;
+static dvui_RectScale grid_screen_rect_scale(void* ptr, dvui_Rect r) {
+    dvui_GridWidget* self = ptr;
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&self->wd), r);
 }
 
-static void grid_min_size_for_child(void *ptr, dvui_Size s) {
-    dvui_GridWidget *self = ptr;
+static void grid_min_size_for_child(void* ptr, dvui_Size s) {
+    dvui_GridWidget* self = ptr;
     dvui_widget_data_min_size_max(&self->wd, dvui_options_pad_size(&self->wd.options, s));
 }
 
 static const dvui_WidgetVTable grid_vtable = {grid_data, grid_rect_for, grid_screen_rect_scale, grid_min_size_for_child};
 
-dvui_Widget dvui_grid_widget_widget(dvui_GridWidget *self) { return (dvui_Widget){self, &grid_vtable}; }
-dvui_WidgetData *dvui_grid_widget_data(dvui_GridWidget *self) { return &self->wd; }
+dvui_Widget dvui_grid_widget_widget(dvui_GridWidget* self) { return (dvui_Widget){self, &grid_vtable}; }
+dvui_WidgetData* dvui_grid_widget_data(dvui_GridWidget* self) { return &self->wd; }
 
 // ---------------------------------------------------------------------------
 // Pomocné funkce pro šířky a výšky (DVUI: colWeight, colWidth, …)
 // ---------------------------------------------------------------------------
 
-static float col_weight(dvui_GridWidget *self, size_t col) {
+static float col_weight(dvui_GridWidget* self, size_t col) {
     if (col >= self->cols) return 0;
     if (self->shrink && (col >= self->col_resizable_len || !self->col_resizable[col])) return 0;
     if (self->shrink || (col < self->col_expands_len && self->col_expands[col])) {
@@ -60,20 +60,20 @@ static float col_weight(dvui_GridWidget *self, size_t col) {
     return 0;
 }
 
-static bool col_expanded(dvui_GridWidget *self, size_t col) { return col < self->col_expands_len && self->col_expands[col]; }
+static bool col_expanded(dvui_GridWidget* self, size_t col) { return col < self->col_expands_len && self->col_expands[col]; }
 
-float dvui_grid_widget_col_width(dvui_GridWidget *self, size_t col) {
+float dvui_grid_widget_col_width(dvui_GridWidget* self, size_t col) {
     if (col < self->cols) return DVUI_MAX(DVUI_GRID_COL_MIN_WIDTH, self->col_widths[col] + self->col_expand * col_weight(self, col));
     return 100;
 }
 
-float dvui_grid_widget_col_offset(dvui_GridWidget *self, size_t col) {
+float dvui_grid_widget_col_offset(dvui_GridWidget* self, size_t col) {
     float x = 0;
     for (size_t i = 0; i < col; i++) x += dvui_grid_widget_col_width(self, i);
     return x;
 }
 
-float dvui_grid_widget_row_height(dvui_GridWidget *self, size_t row) {
+float dvui_grid_widget_row_height(dvui_GridWidget* self, size_t row) {
     // binární hledání v seřazených výškách
     size_t lo = 0, hi = self->row_heights_len;
     while (lo < hi) {
@@ -88,8 +88,8 @@ float dvui_grid_widget_row_height(dvui_GridWidget *self, size_t row) {
     return self->row_height_default->has ? self->row_height_default->v : self->default_min.h;
 }
 
-static void row_offsets_insert(dvui_GridWidget *self, size_t at, dvui_GridRowOffset ro) {
-    dvui_GridRowOffsetList *l = &self->row_offsets;
+static void row_offsets_insert(dvui_GridWidget* self, size_t at, dvui_GridRowOffset ro) {
+    dvui_GridRowOffsetList* l = &self->row_offsets;
     l->items = dvui_frame_grow(l->items, &l->cap, sizeof(dvui_GridRowOffset), l->len + 1);
     memmove(&l->items[at + 1], &l->items[at], (l->len - at) * sizeof(dvui_GridRowOffset));
     l->items[at] = ro;
@@ -97,7 +97,7 @@ static void row_offsets_insert(dvui_GridWidget *self, size_t at, dvui_GridRowOff
 }
 
 // DVUI: GridWidget.rowOffsetInternal
-static float row_offset_internal(dvui_GridWidget *self, size_t row, bool add_row_offsets) {
+static float row_offset_internal(dvui_GridWidget* self, size_t row, bool add_row_offsets) {
     // první RowOffset s větším řádkem (partitionPoint)
     size_t idx = 0;
     while (idx < self->row_offsets.len && self->row_offsets.items[idx].row <= row) idx++;
@@ -121,7 +121,7 @@ static float row_offset_internal(dvui_GridWidget *self, size_t row, bool add_row
     return ry;
 }
 
-float dvui_grid_widget_row_offset(dvui_GridWidget *self, size_t row) { return row_offset_internal(self, row, true); }
+float dvui_grid_widget_row_offset(dvui_GridWidget* self, size_t row) { return row_offset_internal(self, row, true); }
 
 // ---------------------------------------------------------------------------
 // init
@@ -129,15 +129,15 @@ float dvui_grid_widget_row_offset(dvui_GridWidget *self, size_t row) { return ro
 
 // Načte pole uložené v datech; když nesedí délka, vytvoří nové s výchozí
 // hodnotou a zkopíruje staré (DVUI: dataSetSliceCopies + memcpy).
-static void *slice_resize(dvui_Id id, const char *key, size_t elem_size, size_t want_len, const void *def, size_t *out_len) {
+static void* slice_resize(dvui_Id id, const char* key, size_t elem_size, size_t want_len, const void* def, size_t* out_len) {
     size_t bytes;
-    void *old = dvui_data_get_slice(nullptr, id, key, &bytes);
+    void* old = dvui_data_get_slice(nullptr, id, key, &bytes);
     const size_t old_len = old ? bytes / elem_size : 0;
     if (old && old_len == want_len) {
         *out_len = old_len;
         return old;
     }
-    uint8_t *tmp = dvui_frame_alloc(want_len * elem_size + 1);
+    uint8_t* tmp = dvui_frame_alloc(want_len * elem_size + 1);
     for (size_t i = 0; i < want_len; i++) memcpy(tmp + i * elem_size, def, elem_size);
     const size_t keep = DVUI_MIN(old_len, want_len);
     if (keep) memcpy(tmp, old, keep * elem_size);
@@ -147,7 +147,7 @@ static void *slice_resize(dvui_Id id, const char *key, size_t elem_size, size_t 
 }
 
 // DVUI: GridWidget.init
-void dvui_grid_widget_init(dvui_GridWidget *self, dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts) {
+void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts) {
     const dvui_Options options = dvui_options_override(dvui_grid_widget_defaults, opts);
     // DVUI: font.sizeM(4, 1) + padding TextLayoutWidget (6 na každé straně)
     const dvui_Size default_m = dvui_size_pad(dvui_font_size_m(4, 1), dvui_rect_all(6));
@@ -166,9 +166,9 @@ void dvui_grid_widget_init(dvui_GridWidget *self, dvui_Src src, dvui_GridInitOpt
     self->mouse_mode = DVUI_DATA_GET_PTR_DEFAULT(id, "__mouse_mode", bool, false);
 
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        const dvui_Event *e = &evts[i];
+        const dvui_Event* e = &evts[i];
         if (e->kind == DVUI_EVENT_KEY && e->evt.key.action == DVUI_KEY_ACTION_DOWN) {
             *self->mouse_mode = false;
         } else if (e->kind == DVUI_EVENT_MOUSE && e->evt.mouse.action != DVUI_MOUSE_POSITION) {
@@ -180,16 +180,16 @@ void dvui_grid_widget_init(dvui_GridWidget *self, dvui_Src src, dvui_GridInitOpt
     dvui_parent_set(dvui_grid_widget_widget(self));
     dvui_widget_data_border_and_background(&self->wd, (dvui_BorderAndBackgroundOptions){0});
 
-    const dvui_GridAutoSize *as = DVUI_DATA_GET(id, "__auto_size", dvui_GridAutoSize);
+    const dvui_GridAutoSize* as = DVUI_DATA_GET(id, "__auto_size", dvui_GridAutoSize);
     if (as) {
         self->has_auto_size = true;
         self->auto_size = *as;
         dvui_data_remove(nullptr, id, "__auto_size");
     }
 
-    const size_t *cols = DVUI_DATA_GET(id, "__cols", size_t);
+    const size_t* cols = DVUI_DATA_GET(id, "__cols", size_t);
     self->cols = cols ? *cols : 0;
-    const size_t *rows = DVUI_DATA_GET(id, "__rows", size_t);
+    const size_t* rows = DVUI_DATA_GET(id, "__rows", size_t);
     self->rows = init_opts.rows.has ? init_opts.rows.v : (rows ? *rows : 0);
     self->rows_provided = init_opts.rows.has;
 
@@ -209,7 +209,7 @@ void dvui_grid_widget_init(dvui_GridWidget *self, dvui_Src src, dvui_GridInitOpt
 
     if (self->layout_only || dvui_first_frame(id)) dvui_grid_widget_auto_size(self, DVUI_GRID_AUTO_SIZE_BOTH);
 
-    const dvui_ScrollInfo *stored_csi = DVUI_DATA_GET(id, "__csi", dvui_ScrollInfo);
+    const dvui_ScrollInfo* stored_csi = DVUI_DATA_GET(id, "__csi", dvui_ScrollInfo);
     if (stored_csi) self->csi = *stored_csi;
 
     dvui_ScrollAreaInitOptions scroll_opts = init_opts.scroll_opts;
@@ -244,13 +244,13 @@ void dvui_grid_widget_init(dvui_GridWidget *self, dvui_Src src, dvui_GridInitOpt
 }
 
 // Přizpůsobí sloupce/řádky obsahu; trvá několik snímků, než se vše ustálí.
-void dvui_grid_widget_auto_size(dvui_GridWidget *self, dvui_GridAutoSize auto_size) {
+void dvui_grid_widget_auto_size(dvui_GridWidget* self, dvui_GridAutoSize auto_size) {
     self->has_auto_size = true;
     self->auto_size = auto_size;
 }
 
 // DVUI: GridWidget.rowsVisible
-void dvui_grid_widget_rows_visible(dvui_GridWidget *self, size_t *first, size_t *last) {
+void dvui_grid_widget_rows_visible(dvui_GridWidget* self, size_t* first, size_t* last) {
     if (!self->rows_provided) {
         DVUI_LOG_ERR("GridWidget: %llx rowsVisible() requires InitOptions.rows", (unsigned long long)self->wd.id);
         *first = 0;
@@ -301,30 +301,30 @@ void dvui_grid_widget_rows_visible(dvui_GridWidget *self, size_t *first, size_t 
 // CellWidget (DVUI: GridWidget.CellWidget)
 // ---------------------------------------------------------------------------
 
-static dvui_WidgetData *cell_data(void *ptr) { return &((dvui_GridCellWidget *)ptr)->wd; }
+static dvui_WidgetData* cell_data(void* ptr) { return &((dvui_GridCellWidget*)ptr)->wd; }
 
-static dvui_Rect cell_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
-    dvui_GridCellWidget *self = ptr;
+static dvui_Rect cell_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+    dvui_GridCellWidget* self = ptr;
     return dvui_basic_layout_rect_for(&self->layout, dvui_rect_just_size(dvui_widget_data_content_rect(&self->wd)), id, min_size, e, g);
 }
 
-static dvui_RectScale cell_screen_rect_scale(void *ptr, dvui_Rect r) {
-    dvui_GridCellWidget *self = ptr;
+static dvui_RectScale cell_screen_rect_scale(void* ptr, dvui_Rect r) {
+    dvui_GridCellWidget* self = ptr;
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&self->wd), r);
 }
 
-static void cell_min_size_for_child(void *ptr, dvui_Size s) {
-    dvui_GridCellWidget *self = ptr;
+static void cell_min_size_for_child(void* ptr, dvui_Size s) {
+    dvui_GridCellWidget* self = ptr;
     const dvui_Size ms = dvui_basic_layout_min_size_for_child(&self->layout, s);
     dvui_widget_data_min_size_max(&self->wd, dvui_options_pad_size(&self->wd.options, ms));
 }
 
 static const dvui_WidgetVTable cell_vtable = {cell_data, cell_rect_for, cell_screen_rect_scale, cell_min_size_for_child};
 
-dvui_Widget dvui_grid_cell_widget_widget(dvui_GridCellWidget *self) { return (dvui_Widget){self, &cell_vtable}; }
-dvui_WidgetData *dvui_grid_cell_widget_data(dvui_GridCellWidget *self) { return &self->wd; }
+dvui_Widget dvui_grid_cell_widget_widget(dvui_GridCellWidget* self) { return (dvui_Widget){self, &cell_vtable}; }
+dvui_WidgetData* dvui_grid_cell_widget_data(dvui_GridCellWidget* self) { return &self->wd; }
 
-static void cell_widget_init(dvui_GridCellWidget *self, dvui_Src src, dvui_GridWidget *grid, size_t col, size_t row, dvui_Options opts) {
+static void cell_widget_init(dvui_GridCellWidget* self, dvui_Src src, dvui_GridWidget* grid, size_t col, size_t row, dvui_Options opts) {
     if (col < grid->cols && dvui_expand_is_horizontal(dvui_options_expand_get(&opts))) grid->col_expands_new[col] = true;
 
     // expand řídí sloupce/řádky, tady ho vypneme – rect je zadaný
@@ -344,7 +344,7 @@ static void cell_widget_init(dvui_GridCellWidget *self, dvui_Src src, dvui_GridW
 }
 
 // DVUI: CellWidget.deinit – buňka nehlásí min. velikost rodiči, ale gridu.
-void dvui_grid_cell_widget_deinit(dvui_GridCellWidget *self) {
+void dvui_grid_cell_widget_deinit(dvui_GridCellWidget* self) {
     self->wd.min_size = dvui_size_min(self->wd.min_size, dvui_options_max_size_get(&self->wd.options));
     dvui_grid_widget_cell_min_size(self->grid, self->col, self->row, self->wd.min_size);
     dvui_parent_reset(self->wd.id, self->wd.parent);
@@ -354,7 +354,7 @@ void dvui_grid_cell_widget_deinit(dvui_GridCellWidget *self) {
 // Hlavičky a buňky
 // ---------------------------------------------------------------------------
 
-static bool parent_is_scroll_vbox(dvui_GridWidget *self, const char *what) {
+static bool parent_is_scroll_vbox(dvui_GridWidget* self, const char* what) {
     if (dvui_widget_data(dvui_parent_get())->id != self->scroll.vbox.wd.id) {
         DVUI_LOG_ERR("grid %s is not direct child of grid scrollArea, did you try to wrap it in another widget?", what);
         return false;
@@ -363,7 +363,7 @@ static bool parent_is_scroll_vbox(dvui_GridWidget *self, const char *what) {
 }
 
 // DVUI: GridWidget.colHeader
-dvui_GridCellWidget *dvui_grid_widget_col_header(dvui_GridWidget *self, dvui_GridColHeaderInitOptions init_opts, dvui_Options opts) {
+dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_GridColHeaderInitOptions init_opts, dvui_Options opts) {
     if (!self->has_cscroll) {
         if (self->has_bscroll) {
             DVUI_LOG_ERR("GridWidget %llx colHeader called after cell", (unsigned long long)self->wd.id);
@@ -402,11 +402,11 @@ dvui_GridCellWidget *dvui_grid_widget_col_header(dvui_GridWidget *self, dvui_Gri
         dvui_RectScale rs = dvui_widget_data_rect_scale(&self->cell_widget.wd);
         rs.r.x = rs.r.x + rs.r.w - DVUI_GRID_COL_MIN_WIDTH * rs.s;
         rs.r.w = DVUI_GRID_COL_MIN_WIDTH * rs.s;
-        dvui_WidgetData *wd = &self->cell_widget.wd;
+        dvui_WidgetData* wd = &self->cell_widget.wd;
         size_t n;
-        dvui_Event *evts = dvui_events(&n);
+        dvui_Event* evts = dvui_events(&n);
         for (size_t i = 0; i < n; i++) {
-            dvui_Event *e = &evts[i];
+            dvui_Event* e = &evts[i];
             if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = wd->id, .r = rs.r})) continue;
             if (e->kind != DVUI_EVENT_MOUSE) continue;
             const dvui_EventMouse me = e->evt.mouse;
@@ -441,7 +441,7 @@ dvui_GridCellWidget *dvui_grid_widget_col_header(dvui_GridWidget *self, dvui_Gri
 }
 
 // DVUI: GridWidget.ensureBodyScroll – ukončí hlavičky a založí tělo.
-static void ensure_body_scroll(dvui_GridWidget *self) {
+static void ensure_body_scroll(dvui_GridWidget* self) {
     if (self->has_cscroll) {
         float tw = 0;
         for (size_t i = 0; i < self->col_widths_len; i++) tw += self->col_widths[i];
@@ -468,7 +468,7 @@ static void ensure_body_scroll(dvui_GridWidget *self) {
 }
 
 // DVUI: GridWidget.cell
-dvui_GridCellWidget *dvui_grid_widget_cell(dvui_GridWidget *self, dvui_GridCellOptions cell_opts, dvui_Options opts) {
+dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_GridCellOptions cell_opts, dvui_Options opts) {
     ensure_body_scroll(self);
     if ((ptrdiff_t)cell_opts.col > self->max_seen_col) self->max_seen_col = (ptrdiff_t)cell_opts.col;
     if ((ptrdiff_t)cell_opts.row > self->max_seen_row) self->max_seen_row = (ptrdiff_t)cell_opts.row;
@@ -490,8 +490,8 @@ dvui_GridCellWidget *dvui_grid_widget_cell(dvui_GridWidget *self, dvui_GridCellO
 }
 
 // DVUI: GridWidget.cellMinSize
-void dvui_grid_widget_cell_min_size(dvui_GridWidget *self, size_t col, size_t row, dvui_Size min_size) {
-    dvui_GridFloatList *cw = &self->col_widths_auto;
+void dvui_grid_widget_cell_min_size(dvui_GridWidget* self, size_t col, size_t row, dvui_Size min_size) {
+    dvui_GridFloatList* cw = &self->col_widths_auto;
     while (col >= cw->len) {
         cw->items = dvui_frame_grow(cw->items, &cw->cap, sizeof(float), cw->len + 1);
         cw->items[cw->len++] = 10;
@@ -504,14 +504,14 @@ void dvui_grid_widget_cell_min_size(dvui_GridWidget *self, size_t col, size_t ro
     }
 
     const float h = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, min_size.h);
-    dvui_OptF32 *def = self->row_height_default;
+    dvui_OptF32* def = self->row_height_default;
     if (def->has) {
         def->v = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, DVUI_MIN(def->v, h));
     } else {
         *def = (dvui_OptF32){.has = true, .v = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, h)};
     }
 
-    dvui_GridRowHeightList *rh = &self->row_heights_auto;
+    dvui_GridRowHeightList* rh = &self->row_heights_auto;
     size_t pp = 0;
     while (pp < rh->len && rh->items[pp].row < row) pp++;
     if (pp == rh->len || rh->items[pp].row > row) {
@@ -525,7 +525,7 @@ void dvui_grid_widget_cell_min_size(dvui_GridWidget *self, size_t col, size_t ro
 }
 
 // DVUI: GridWidget.cellFromPoint
-bool dvui_grid_widget_cell_from_point(dvui_GridWidget *self, dvui_PointPhysical p, dvui_GridCell *out) {
+bool dvui_grid_widget_cell_from_point(dvui_GridWidget* self, dvui_PointPhysical p, dvui_GridCell* out) {
     ensure_body_scroll(self);
     const dvui_Point logical = dvui_scroll_container_widget_point_from_physical(&self->bscroll, p);
     if (logical.x < 0 || logical.y < 0) return false;
@@ -554,13 +554,13 @@ bool dvui_grid_widget_cell_from_point(dvui_GridWidget *self, dvui_PointPhysical 
 }
 
 // DVUI: GridWidget.cellHovered (jen režim myši)
-bool dvui_grid_widget_cell_hovered(dvui_GridWidget *self, dvui_GridCell *out) {
+bool dvui_grid_widget_cell_hovered(dvui_GridWidget* self, dvui_GridCell* out) {
     ensure_body_scroll(self);
     if (!*self->mouse_mode) return false;
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match_simple(e, &self->wd)) continue;
         if (e->kind == DVUI_EVENT_MOUSE && e->evt.mouse.action == DVUI_MOUSE_POSITION) return dvui_grid_widget_cell_from_point(self, e->evt.mouse.p, out);
     }
@@ -572,7 +572,7 @@ bool dvui_grid_widget_cell_hovered(dvui_GridWidget *self, dvui_GridCell *out) {
 // ---------------------------------------------------------------------------
 
 // DVUI: část GridWidget.deinit – ruční změna šířky sloupce
-static void apply_col_resize(dvui_GridWidget *self) {
+static void apply_col_resize(dvui_GridWidget* self) {
     const size_t col = self->col_resize;
     if (col >= self->cols) return;
     const float factor = 1 + self->col_expand;
@@ -639,7 +639,7 @@ done:
 }
 
 // DVUI: GridWidget.deinit (bez klávesové navigace a kurzoru buněk)
-void dvui_grid_widget_deinit(dvui_GridWidget *self) {
+void dvui_grid_widget_deinit(dvui_GridWidget* self) {
     const dvui_Id id = self->wd.id;
     ensure_body_scroll(self);
 
@@ -675,7 +675,7 @@ void dvui_grid_widget_deinit(dvui_GridWidget *self) {
             }
 
             // existující výšky řádků, které jsme tento snímek neviděli, zachováme
-            dvui_GridRowHeightList *ra = &self->row_heights_auto;
+            dvui_GridRowHeightList* ra = &self->row_heights_auto;
             for (size_t i = 0; i < self->row_heights_len; i++) {
                 const dvui_GridRowHeight rh = self->row_heights[i];
                 size_t pp = 0;
@@ -723,8 +723,8 @@ void dvui_grid_widget_deinit(dvui_GridWidget *self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-dvui_GridWidget *dvui_grid(dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts) {
-    dvui_GridWidget *ret = dvui_widget_alloc(sizeof *ret);
+dvui_GridWidget* dvui_grid(dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts) {
+    dvui_GridWidget* ret = dvui_widget_alloc(sizeof *ret);
     dvui_grid_widget_init(ret, src, init_opts, opts);
     return ret;
 }

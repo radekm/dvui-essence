@@ -23,13 +23,13 @@ typedef struct dvui_TestingBackend {
     int64_t time_ns;
     dvui_Cursor cursor;
     // Vykreslení z posledního snímku.
-    dvui_TestingDraw *draws;
+    dvui_TestingDraw* draws;
     size_t draws_len, draws_cap;
 } dvui_TestingBackend;
 
-void dvui_testing_backend_init(dvui_TestingBackend *tb, dvui_Size size);
-void dvui_testing_backend_deinit(dvui_TestingBackend *tb);
-dvui_Backend dvui_testing_backend(dvui_TestingBackend *tb);
+void dvui_testing_backend_init(dvui_TestingBackend* tb, dvui_Size size);
+void dvui_testing_backend_deinit(dvui_TestingBackend* tb);
+dvui_Backend dvui_testing_backend(dvui_TestingBackend* tb);
 
 #ifdef __cplusplus
 }

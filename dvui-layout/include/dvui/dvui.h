@@ -8,7 +8,7 @@
 //
 //     dvui_window_begin(win, nanoTime);
 //     dvui_sdl3gpu_add_all_events(backend, win);
-//     dvui_BoxWidget *b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){0});
+//     dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){0});
 //     if (dvui_button(DVUI_SRC, (dvui_Size){40, 12}, (dvui_ButtonInitOptions){0}, (dvui_Options){0})) { ... }
 //     dvui_box_widget_deinit(b);
 //     dvui_window_end(win);
@@ -32,7 +32,7 @@ typedef uint64_t dvui_Id;
 // Náhrada za Zig `@src()`. Sloupec nahrazuje `__COUNTER__`, aby dva widgety
 // na jednom řádku dostaly různá id (stejně jako v DVUI díky sloupci).
 typedef struct dvui_Src {
-    const char *file;
+    const char* file;
     int line;
     int column;
 } dvui_Src;
@@ -211,7 +211,7 @@ typedef struct dvui_Options {
     // Odliší widgety vytvořené na stejném místě ve zdrojáku (např. ve smyčce).
     dvui_OptUsize id_extra;
     // Jméno pro ladění (NULL = nenastaveno).
-    const char *name;
+    const char* name;
 
     // Pokud je nastaveno, widget se nevkládá do layoutu rodiče, ale umístí se
     // přímo sem (v souřadnicích rodiče).
@@ -251,21 +251,21 @@ dvui_Options dvui_options_strip(dvui_Options self);
 // DVUI: Options.styleOnly
 dvui_Options dvui_options_style_only(dvui_Options self);
 
-size_t dvui_options_id_extra(const dvui_Options *o);
-dvui_Expand dvui_options_expand_get(const dvui_Options *o);
-dvui_Gravity dvui_options_gravity_get(const dvui_Options *o);
-dvui_Rect dvui_options_margin_get(const dvui_Options *o);
-dvui_Rect dvui_options_border_get(const dvui_Options *o);
-dvui_Rect dvui_options_padding_get(const dvui_Options *o);
-bool dvui_options_background_get(const dvui_Options *o);
-dvui_StyleName dvui_options_style_get(const dvui_Options *o);
-dvui_Size dvui_options_min_size_get(const dvui_Options *o);
-dvui_Size dvui_options_min_size_content_get(const dvui_Options *o);
-dvui_Size dvui_options_max_size_get(const dvui_Options *o);
-dvui_Size dvui_options_max_size_content_get(const dvui_Options *o);
-dvui_Size dvui_options_pad_size(const dvui_Options *o, dvui_Size s);
+size_t dvui_options_id_extra(const dvui_Options* o);
+dvui_Expand dvui_options_expand_get(const dvui_Options* o);
+dvui_Gravity dvui_options_gravity_get(const dvui_Options* o);
+dvui_Rect dvui_options_margin_get(const dvui_Options* o);
+dvui_Rect dvui_options_border_get(const dvui_Options* o);
+dvui_Rect dvui_options_padding_get(const dvui_Options* o);
+bool dvui_options_background_get(const dvui_Options* o);
+dvui_StyleName dvui_options_style_get(const dvui_Options* o);
+dvui_Size dvui_options_min_size_get(const dvui_Options* o);
+dvui_Size dvui_options_min_size_content_get(const dvui_Options* o);
+dvui_Size dvui_options_max_size_get(const dvui_Options* o);
+dvui_Size dvui_options_max_size_content_get(const dvui_Options* o);
+dvui_Size dvui_options_pad_size(const dvui_Options* o, dvui_Size s);
 // DVUI: Options.color – barva z Options, jinak z tématu.
-dvui_Color dvui_options_color(const dvui_Options *o, dvui_ColorAsk ask);
+dvui_Color dvui_options_color(const dvui_Options* o, dvui_ColorAsk ask);
 
 // ---------------------------------------------------------------------------
 // Téma (DVUI: Theme.zig, zjednodušené – viz README)
@@ -282,7 +282,7 @@ typedef struct dvui_ThemeStyle {
 } dvui_ThemeStyle;
 
 typedef struct dvui_Theme {
-    const char *name;
+    const char* name;
     bool dark;
     dvui_Color focus;
     dvui_Color fill;
@@ -302,9 +302,9 @@ typedef struct dvui_Theme {
 // Výchozí téma podle DVUI Adwaita Light.
 dvui_Theme dvui_theme_adwaita_light(void);
 // DVUI: Theme.color
-dvui_Color dvui_theme_color(const dvui_Theme *t, dvui_StyleName style, dvui_ColorAsk ask);
+dvui_Color dvui_theme_color(const dvui_Theme* t, dvui_StyleName style, dvui_ColorAsk ask);
 // DVUI: Theme.adjustColorForState
-dvui_Color dvui_theme_adjust_color_for_state(const dvui_Theme *t, dvui_Color col, dvui_ColorAsk ask);
+dvui_Color dvui_theme_adjust_color_for_state(const dvui_Theme* t, dvui_Color col, dvui_ColorAsk ask);
 
 // Velikost písmene „M“ výchozího fontu. DVUI ji počítá z fontu; zde je to
 // konstanta, protože dvui-layout nemá text (používá ji grid).
@@ -317,19 +317,19 @@ dvui_Size dvui_font_size_m(float wide, float tall);
 typedef struct dvui_WidgetData dvui_WidgetData;
 
 typedef struct dvui_WidgetVTable {
-    dvui_WidgetData *(*data)(void *ptr);
-    dvui_Rect (*rect_for)(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
-    dvui_RectScale (*screen_rect_scale)(void *ptr, dvui_Rect r);
-    void (*min_size_for_child)(void *ptr, dvui_Size s);
+    dvui_WidgetData* (*data)(void* ptr);
+    dvui_Rect (*rect_for)(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
+    dvui_RectScale (*screen_rect_scale)(void* ptr, dvui_Rect r);
+    void (*min_size_for_child)(void* ptr, dvui_Size s);
 } dvui_WidgetVTable;
 
 // DVUI: Widget.zig – rozhraní rodiče (ukazatel + vtable).
 typedef struct dvui_Widget {
-    void *ptr;
-    const dvui_WidgetVTable *vtable;
+    void* ptr;
+    const dvui_WidgetVTable* vtable;
 } dvui_Widget;
 
-dvui_WidgetData *dvui_widget_data(dvui_Widget w);
+dvui_WidgetData* dvui_widget_data(dvui_Widget w);
 dvui_Id dvui_widget_extend_id(dvui_Widget w, dvui_Src src, size_t id_extra);
 dvui_Rect dvui_widget_rect_for(dvui_Widget w, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
 dvui_RectScale dvui_widget_screen_rect_scale(dvui_Widget w, dvui_Rect r);
@@ -358,28 +358,28 @@ struct dvui_WidgetData {
 };
 
 dvui_WidgetData dvui_widget_data_init(dvui_Src src, dvui_WidgetDataInitOptions init_options, dvui_Options opts);
-void dvui_widget_data_rect_set(dvui_WidgetData *wd, dvui_Rect r);
-void dvui_widget_data_register(dvui_WidgetData *wd);
-bool dvui_widget_data_visible(const dvui_WidgetData *wd);
+void dvui_widget_data_rect_set(dvui_WidgetData* wd, dvui_Rect r);
+void dvui_widget_data_register(dvui_WidgetData* wd);
+bool dvui_widget_data_visible(const dvui_WidgetData* wd);
 
 typedef struct dvui_BorderAndBackgroundOptions {
     dvui_OptColor fill_color;
 } dvui_BorderAndBackgroundOptions;
-void dvui_widget_data_border_and_background(const dvui_WidgetData *wd, dvui_BorderAndBackgroundOptions opts);
-void dvui_widget_data_focus_border(const dvui_WidgetData *wd);
+void dvui_widget_data_border_and_background(const dvui_WidgetData* wd, dvui_BorderAndBackgroundOptions opts);
+void dvui_widget_data_focus_border(const dvui_WidgetData* wd);
 
-dvui_RectScale dvui_widget_data_rect_scale_from_parent(const dvui_WidgetData *wd);
-dvui_RectScale dvui_widget_data_rect_scale(const dvui_WidgetData *wd);
-dvui_Rect dvui_widget_data_border_rect(const dvui_WidgetData *wd);
-dvui_RectScale dvui_widget_data_border_rect_scale(const dvui_WidgetData *wd);
-dvui_Rect dvui_widget_data_background_rect(const dvui_WidgetData *wd);
-dvui_RectScale dvui_widget_data_background_rect_scale(const dvui_WidgetData *wd);
-dvui_Rect dvui_widget_data_content_rect(const dvui_WidgetData *wd);
-dvui_RectScale dvui_widget_data_content_rect_scale(const dvui_WidgetData *wd);
-void dvui_widget_data_min_size_max(dvui_WidgetData *wd, dvui_Size s);
-void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData *wd);
-void dvui_widget_data_min_size_report_to_parent(const dvui_WidgetData *wd);
-bool dvui_widget_data_is_root(const dvui_WidgetData *wd);
+dvui_RectScale dvui_widget_data_rect_scale_from_parent(const dvui_WidgetData* wd);
+dvui_RectScale dvui_widget_data_rect_scale(const dvui_WidgetData* wd);
+dvui_Rect dvui_widget_data_border_rect(const dvui_WidgetData* wd);
+dvui_RectScale dvui_widget_data_border_rect_scale(const dvui_WidgetData* wd);
+dvui_Rect dvui_widget_data_background_rect(const dvui_WidgetData* wd);
+dvui_RectScale dvui_widget_data_background_rect_scale(const dvui_WidgetData* wd);
+dvui_Rect dvui_widget_data_content_rect(const dvui_WidgetData* wd);
+dvui_RectScale dvui_widget_data_content_rect_scale(const dvui_WidgetData* wd);
+void dvui_widget_data_min_size_max(dvui_WidgetData* wd, dvui_Size s);
+void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData* wd);
+void dvui_widget_data_min_size_report_to_parent(const dvui_WidgetData* wd);
+bool dvui_widget_data_is_root(const dvui_WidgetData* wd);
 
 // ---------------------------------------------------------------------------
 // Layout pomocníci (DVUI: layout.zig)
@@ -396,8 +396,8 @@ typedef struct dvui_BasicLayout {
     dvui_Size min_size_children;
 } dvui_BasicLayout;
 
-dvui_Rect dvui_basic_layout_rect_for(dvui_BasicLayout *self, dvui_Rect content_rect, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
-dvui_Size dvui_basic_layout_min_size_for_child(dvui_BasicLayout *self, dvui_Size s);
+dvui_Rect dvui_basic_layout_rect_for(dvui_BasicLayout* self, dvui_Rect content_rect, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
+dvui_Size dvui_basic_layout_min_size_for_child(dvui_BasicLayout* self, dvui_Size s);
 
 // DVUI: layout.PlaceOnScreenAvoid
 typedef enum dvui_PlaceOnScreenAvoid {
@@ -518,22 +518,22 @@ typedef struct dvui_Event {
 } dvui_Event;
 
 // DVUI: Event.handle
-void dvui_event_handle(dvui_Event *e, const dvui_WidgetData *wd);
+void dvui_event_handle(dvui_Event* e, const dvui_WidgetData* wd);
 
 // DVUI: dvui.events – události aktuálního snímku.
-dvui_Event *dvui_events(size_t *count);
+dvui_Event* dvui_events(size_t* count);
 
 typedef struct dvui_EventMatchOptions {
     dvui_Id id;
     dvui_Id focus_id;
     dvui_RectPhysical r;
-    const char *drag_name;
+    const char* drag_name;
 } dvui_EventMatchOptions;
 
 // DVUI: dvui.eventMatch – má widget zpracovat událost `e`?
-bool dvui_event_match(dvui_Event *e, dvui_EventMatchOptions opts);
+bool dvui_event_match(dvui_Event* e, dvui_EventMatchOptions opts);
 // DVUI: dvui.eventMatchSimple
-bool dvui_event_match_simple(dvui_Event *e, dvui_WidgetData *wd);
+bool dvui_event_match_simple(dvui_Event* e, dvui_WidgetData* wd);
 
 typedef enum dvui_Cursor {
     DVUI_CURSOR_ARROW = 0,
@@ -546,14 +546,14 @@ typedef enum dvui_Cursor {
 } dvui_Cursor;
 
 typedef struct dvui_ClickOptions {
-    bool *hovered;
+    bool* hovered;
     // DVUI výchozí .hand; zde `no_hover_cursor` vypne nastavení kurzoru.
     bool no_hover_cursor;
     dvui_OptRect rect;
 } dvui_ClickOptions;
 
 // DVUI: dvui.clicked
-bool dvui_clicked(const dvui_WidgetData *wd, dvui_ClickOptions opts);
+bool dvui_clicked(const dvui_WidgetData* wd, dvui_ClickOptions opts);
 
 // ---------------------------------------------------------------------------
 // Backend (DVUI: Backend.zig)
@@ -567,17 +567,17 @@ typedef struct dvui_Vertex {
 } dvui_Vertex;
 
 typedef struct dvui_Backend {
-    void *ctx;
-    void (*begin)(void *ctx);
-    void (*end)(void *ctx);
-    dvui_SizePhysical (*pixel_size)(void *ctx);
-    dvui_SizeNatural (*window_size)(void *ctx);
-    float (*content_scale)(void *ctx);
+    void* ctx;
+    void (*begin)(void* ctx);
+    void (*end)(void* ctx);
+    dvui_SizePhysical (*pixel_size)(void* ctx);
+    dvui_SizeNatural (*window_size)(void* ctx);
+    float (*content_scale)(void* ctx);
     // `clip` může být NULL (bez ořezu).
-    void (*draw_clipped_triangles)(void *ctx, const dvui_Vertex *vtx, size_t vtx_count, const uint32_t *idx, size_t idx_count, const dvui_RectPhysical *clip);
-    void (*set_cursor)(void *ctx, dvui_Cursor cursor);
-    void (*render_present)(void *ctx);
-    int64_t (*nano_time)(void *ctx);
+    void (*draw_clipped_triangles)(void* ctx, const dvui_Vertex* vtx, size_t vtx_count, const uint32_t* idx, size_t idx_count, const dvui_RectPhysical* clip);
+    void (*set_cursor)(void* ctx, dvui_Cursor cursor);
+    void (*render_present)(void* ctx);
+    int64_t (*nano_time)(void* ctx);
 } dvui_Backend;
 
 // ---------------------------------------------------------------------------
@@ -586,30 +586,30 @@ typedef struct dvui_Backend {
 
 typedef struct dvui_Window dvui_Window;
 
-dvui_Window *dvui_window_create(dvui_Backend backend);
-void dvui_window_destroy(dvui_Window *win);
-void dvui_window_theme_set(dvui_Window *win, dvui_Theme theme);
+dvui_Window* dvui_window_create(dvui_Backend backend);
+void dvui_window_destroy(dvui_Window* win);
+void dvui_window_theme_set(dvui_Window* win, dvui_Theme theme);
 // Ukazatel na proměnnou, do které se při zavření okna zapíše false.
-void dvui_window_open_flag_set(dvui_Window *win, bool *open_flag);
+void dvui_window_open_flag_set(dvui_Window* win, bool* open_flag);
 
 // DVUI: Window.begin
-void dvui_window_begin(dvui_Window *win, int64_t time_ns);
+void dvui_window_begin(dvui_Window* win, int64_t time_ns);
 // DVUI: Window.end – vrací, za kolik mikrosekund chce další snímek
 // (0 = hned, -1 = čekat na událost).
-int64_t dvui_window_end(dvui_Window *win);
+int64_t dvui_window_end(dvui_Window* win);
 
 // Přidávání událostí (DVUI: Window.addEvent*). Volat po begin, před widgety.
 // Vrací true, pokud je událost nad floating oknem.
-bool dvui_window_add_event_mouse_motion(dvui_Window *win, dvui_PointPhysical pt);
-bool dvui_window_add_event_mouse_button(dvui_Window *win, dvui_Button b, dvui_MouseActionKind action);
-bool dvui_window_add_event_mouse_wheel(dvui_Window *win, float ticks, dvui_Direction dir);
-bool dvui_window_add_event_key(dvui_Window *win, dvui_Key code, dvui_KeyAction action, unsigned mod);
-void dvui_window_add_event_window(dvui_Window *win, dvui_WindowAction action);
-void dvui_window_add_event_app_quit(dvui_Window *win);
-void dvui_window_modifiers_set(dvui_Window *win, unsigned mod);
+bool dvui_window_add_event_mouse_motion(dvui_Window* win, dvui_PointPhysical pt);
+bool dvui_window_add_event_mouse_button(dvui_Window* win, dvui_Button b, dvui_MouseActionKind action);
+bool dvui_window_add_event_mouse_wheel(dvui_Window* win, float ticks, dvui_Direction dir);
+bool dvui_window_add_event_key(dvui_Window* win, dvui_Key code, dvui_KeyAction action, unsigned mod);
+void dvui_window_add_event_window(dvui_Window* win, dvui_WindowAction action);
+void dvui_window_add_event_app_quit(dvui_Window* win);
+void dvui_window_modifiers_set(dvui_Window* win, unsigned mod);
 
 // DVUI: Window.cursorRequested
-dvui_Cursor dvui_window_cursor_requested(const dvui_Window *win);
+dvui_Cursor dvui_window_cursor_requested(const dvui_Window* win);
 
 // Rychlost kolečka myši (DVUI: dvui.scroll_speed).
 extern float dvui_scroll_speed;
@@ -618,25 +618,25 @@ extern float dvui_scroll_speed;
 // Globální funkce platné mezi begin a end (DVUI: dvui.zig)
 // ---------------------------------------------------------------------------
 
-dvui_Window *dvui_current_window(void);
+dvui_Window* dvui_current_window(void);
 dvui_Id dvui_id_extend(dvui_Id start, dvui_Src src, size_t id_extra);
-dvui_Id dvui_id_update(dvui_Id id, const char *name);
+dvui_Id dvui_id_update(dvui_Id id, const char* name);
 
 dvui_Widget dvui_parent_get(void);
 void dvui_parent_set(dvui_Widget w);
 void dvui_parent_reset(dvui_Id id, dvui_Widget prev_parent);
 
-void dvui_refresh(dvui_Window *win, dvui_Src src, dvui_Id id);
+void dvui_refresh(dvui_Window* win, dvui_Src src, dvui_Id id);
 bool dvui_first_frame(dvui_Id id);
 // Min. velikost z minulého snímku; false, pokud widget minule nebyl.
-bool dvui_min_size_get(dvui_Id id, dvui_Size *out);
+bool dvui_min_size_get(dvui_Id id, dvui_Size* out);
 
 dvui_RectNatural dvui_window_rect(void);
 dvui_RectPhysical dvui_window_rect_pixels(void);
 dvui_RectScale dvui_window_rect_scale(void);
 float dvui_window_natural_scale(void);
 float dvui_seconds_since_last_frame(void);
-const dvui_Theme *dvui_theme_get(void);
+const dvui_Theme* dvui_theme_get(void);
 
 dvui_RectPhysical dvui_clip_get(void);
 dvui_RectPhysical dvui_clip(dvui_RectPhysical r);
@@ -647,23 +647,23 @@ bool dvui_snap_to_pixels(void);
 
 // Datové úložiště (DVUI: dvui.dataGet/dataSet …). Hodnoty, které se během
 // snímku nepoužijí, se na začátku dalšího snímku zahodí.
-void dvui_data_set(dvui_Window *win, dvui_Id id, const char *key, const void *value, size_t size);
+void dvui_data_set(dvui_Window* win, dvui_Id id, const char* key, const void* value, size_t size);
 // Vrací ukazatel na uloženou hodnotu, nebo NULL. Ukazatel platí do dalšího
 // dvui_data_set se stejným klíčem a jinou velikostí.
-void *dvui_data_get(dvui_Window *win, dvui_Id id, const char *key, size_t size);
-void *dvui_data_get_ptr_default(dvui_Window *win, dvui_Id id, const char *key, size_t size, const void *def);
+void* dvui_data_get(dvui_Window* win, dvui_Id id, const char* key, size_t size);
+void* dvui_data_get_ptr_default(dvui_Window* win, dvui_Id id, const char* key, size_t size, const void* def);
 // Pro pole proměnné délky (DVUI: dataGetSlice); `*size` je délka v bajtech.
-void *dvui_data_get_slice(dvui_Window *win, dvui_Id id, const char *key, size_t *size);
-void dvui_data_remove(dvui_Window *win, dvui_Id id, const char *key);
+void* dvui_data_get_slice(dvui_Window* win, dvui_Id id, const char* key, size_t* size);
+void dvui_data_remove(dvui_Window* win, dvui_Id id, const char* key);
 
-#define DVUI_DATA_GET(id, key, T) ((T *)dvui_data_get(nullptr, (id), (key), sizeof(T)))
+#define DVUI_DATA_GET(id, key, T) ((T*)dvui_data_get(nullptr, (id), (key), sizeof(T)))
 #define DVUI_DATA_SET(id, key, T, val) \
     do { \
         T dvui_tmp_ = (val); \
         dvui_data_set(nullptr, (id), (key), &dvui_tmp_, sizeof(T)); \
     } while (0)
 #define DVUI_DATA_GET_PTR_DEFAULT(id, key, T, def) \
-    ((T *)dvui_data_get_ptr_default(nullptr, (id), (key), sizeof(T), (T[1]){def}))
+    ((T*)dvui_data_get_ptr_default(nullptr, (id), (key), sizeof(T), (T[1]){def}))
 
 // Subwindows a fokus (DVUI: dvui.zig)
 typedef struct dvui_SubwindowCurrentSetReturn {
@@ -672,12 +672,12 @@ typedef struct dvui_SubwindowCurrentSetReturn {
 } dvui_SubwindowCurrentSetReturn;
 
 void dvui_subwindow_add(dvui_Id id, dvui_Rect rect, dvui_RectPhysical rect_pixels, bool modal, dvui_Id stay_above_parent_window, bool mouse_events);
-dvui_SubwindowCurrentSetReturn dvui_subwindow_current_set(dvui_Id id, const dvui_RectNatural *rect);
+dvui_SubwindowCurrentSetReturn dvui_subwindow_current_set(dvui_Id id, const dvui_RectNatural* rect);
 dvui_Id dvui_subwindow_current_id(void);
-void dvui_focus_subwindow(dvui_Id subwindow_id, const uint16_t *event_num);
+void dvui_focus_subwindow(dvui_Id subwindow_id, const uint16_t* event_num);
 void dvui_raise_subwindow(dvui_Id subwindow_id);
 dvui_Id dvui_focused_subwindow_id(void);
-void dvui_focus_widget(dvui_Id id, dvui_Id subwindow_id, const uint16_t *event_num);
+void dvui_focus_widget(dvui_Id id, dvui_Id subwindow_id, const uint16_t* event_num);
 dvui_Id dvui_focused_widget_id(void);
 dvui_Id dvui_focused_widget_id_in_current_subwindow(void);
 dvui_Id dvui_last_focused_id_in_frame(void);
@@ -691,7 +691,7 @@ typedef struct dvui_CaptureMouse {
     dvui_Id subwindow_id;
 } dvui_CaptureMouse;
 
-void dvui_capture_mouse(const dvui_WidgetData *wd, uint16_t event_num);
+void dvui_capture_mouse(const dvui_WidgetData* wd, uint16_t event_num);
 void dvui_capture_mouse_maintain(dvui_CaptureMouse cm);
 bool dvui_captured(dvui_Id id);
 
@@ -700,24 +700,24 @@ typedef struct dvui_DragStartOptions {
     dvui_Cursor cursor;
     bool has_cursor;
     dvui_PointPhysical offset;
-    const char *name;
+    const char* name;
 } dvui_DragStartOptions;
 
 void dvui_drag_pre_start(dvui_Button b, dvui_PointPhysical p, dvui_DragStartOptions options);
 void dvui_drag_start(dvui_Button b, dvui_PointPhysical p, dvui_DragStartOptions options);
 dvui_PointPhysical dvui_drag_offset(dvui_Button b);
 // Vrací true a posun, pokud probíhá tažení.
-bool dvui_dragging(dvui_EventMouse me, const char *name, dvui_PointPhysical *out);
+bool dvui_dragging(dvui_EventMouse me, const char* name, dvui_PointPhysical* out);
 void dvui_drag_end(dvui_Button b);
 
 // DVUI: dvui.stateFade / hoverFade
-float dvui_state_fade(dvui_Id id, const char *key, bool on, float secs);
+float dvui_state_fade(dvui_Id id, const char* key, bool on, float secs);
 float dvui_hover_fade(dvui_Id id, bool hovered);
 
 // Alokace widgetů pro „pohodlné“ funkce (DVUI: widgetAlloc/widgetFree).
-void *dvui_widget_alloc(size_t size);
-void dvui_widget_free(void *ptr);
-bool dvui_widget_is_allocated(const void *ptr);
+void* dvui_widget_alloc(size_t size);
+void dvui_widget_free(void* ptr);
+bool dvui_widget_is_allocated(const void* ptr);
 
 // Kreslení (náhrada DVUI Path/Triangles pro obdélníky s ostrými rohy).
 void dvui_render_fill_rect(dvui_RectPhysical r, dvui_Color color, bool after);
@@ -725,14 +725,14 @@ void dvui_render_stroke_rect(dvui_RectPhysical r, float thickness, dvui_Color co
 
 // DVUI: dvui.RenderFrontToBack
 typedef struct dvui_RenderFrontToBack {
-    void *render_cmds;
-    void *render_cmds_after;
+    void* render_cmds;
+    void* render_cmds_after;
     bool prev_rendering;
-    void *prev_dr_cmds;
-    void *prev_dr_cmds_after;
+    void* prev_dr_cmds;
+    void* prev_dr_cmds_after;
 } dvui_RenderFrontToBack;
-void dvui_render_front_to_back_init_reset(dvui_RenderFrontToBack *self);
-void dvui_render_front_to_back_deinit(dvui_RenderFrontToBack *self);
+void dvui_render_front_to_back_init_reset(dvui_RenderFrontToBack* self);
+void dvui_render_front_to_back_deinit(dvui_RenderFrontToBack* self);
 
 // Scrollování (DVUI: dvui.scrollTo / scrollDrag)
 typedef struct dvui_ScrollToOptions {
@@ -767,11 +767,11 @@ typedef struct dvui_OverlayWidget {
     dvui_WidgetData wd;
 } dvui_OverlayWidget;
 
-void dvui_overlay_widget_init(dvui_OverlayWidget *self, dvui_Src src, dvui_Options opts);
-void dvui_overlay_widget_draw_background(dvui_OverlayWidget *self);
-dvui_Widget dvui_overlay_widget_widget(dvui_OverlayWidget *self);
-void dvui_overlay_widget_deinit(dvui_OverlayWidget *self);
-dvui_OverlayWidget *dvui_overlay(dvui_Src src, dvui_Options opts);
+void dvui_overlay_widget_init(dvui_OverlayWidget* self, dvui_Src src, dvui_Options opts);
+void dvui_overlay_widget_draw_background(dvui_OverlayWidget* self);
+dvui_Widget dvui_overlay_widget_widget(dvui_OverlayWidget* self);
+void dvui_overlay_widget_deinit(dvui_OverlayWidget* self);
+dvui_OverlayWidget* dvui_overlay(dvui_Src src, dvui_Options opts);
 
 // --- Box (DVUI: BoxWidget.zig)
 
@@ -808,16 +808,16 @@ typedef struct dvui_BoxWidget {
     float pixels_per_w;
 } dvui_BoxWidget;
 
-void dvui_box_widget_init(dvui_BoxWidget *self, dvui_Src src, dvui_BoxInitOptions init_options, dvui_Options opts);
-void dvui_box_widget_draw_background(dvui_BoxWidget *self);
-dvui_Widget dvui_box_widget_widget(dvui_BoxWidget *self);
-dvui_WidgetData *dvui_box_widget_data(dvui_BoxWidget *self);
-dvui_Rect dvui_box_widget_rect_for(dvui_BoxWidget *self, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
-dvui_RectScale dvui_box_widget_screen_rect_scale(dvui_BoxWidget *self, dvui_Rect rect);
-void dvui_box_widget_min_size_for_child(dvui_BoxWidget *self, dvui_Size s);
-void dvui_box_widget_deinit(dvui_BoxWidget *self);
+void dvui_box_widget_init(dvui_BoxWidget* self, dvui_Src src, dvui_BoxInitOptions init_options, dvui_Options opts);
+void dvui_box_widget_draw_background(dvui_BoxWidget* self);
+dvui_Widget dvui_box_widget_widget(dvui_BoxWidget* self);
+dvui_WidgetData* dvui_box_widget_data(dvui_BoxWidget* self);
+dvui_Rect dvui_box_widget_rect_for(dvui_BoxWidget* self, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
+dvui_RectScale dvui_box_widget_screen_rect_scale(dvui_BoxWidget* self, dvui_Rect rect);
+void dvui_box_widget_min_size_for_child(dvui_BoxWidget* self, dvui_Size s);
+void dvui_box_widget_deinit(dvui_BoxWidget* self);
 // DVUI: dvui.box – alokuje widget, zavolá init a drawBackground.
-dvui_BoxWidget *dvui_box(dvui_Src src, dvui_BoxInitOptions init_opts, dvui_Options opts);
+dvui_BoxWidget* dvui_box(dvui_Src src, dvui_BoxInitOptions init_opts, dvui_Options opts);
 
 // --- Button (DVUI: ButtonWidget.zig)
 
@@ -837,18 +837,18 @@ typedef struct dvui_ButtonWidget {
 
 extern dvui_Options dvui_button_widget_defaults;
 
-void dvui_button_widget_init(dvui_ButtonWidget *self, dvui_Src src, dvui_ButtonInitOptions init_options, dvui_Options opts);
-void dvui_button_widget_process_events(dvui_ButtonWidget *self);
-void dvui_button_widget_draw_background(dvui_ButtonWidget *self);
-void dvui_button_widget_draw_focus(dvui_ButtonWidget *self);
-dvui_Options dvui_button_widget_style(dvui_ButtonWidget *self);
-bool dvui_button_widget_focused(dvui_ButtonWidget *self);
-bool dvui_button_widget_hovered(dvui_ButtonWidget *self);
-bool dvui_button_widget_pressed(dvui_ButtonWidget *self);
-bool dvui_button_widget_clicked(dvui_ButtonWidget *self);
-dvui_Widget dvui_button_widget_widget(dvui_ButtonWidget *self);
-dvui_WidgetData *dvui_button_widget_data(dvui_ButtonWidget *self);
-void dvui_button_widget_deinit(dvui_ButtonWidget *self);
+void dvui_button_widget_init(dvui_ButtonWidget* self, dvui_Src src, dvui_ButtonInitOptions init_options, dvui_Options opts);
+void dvui_button_widget_process_events(dvui_ButtonWidget* self);
+void dvui_button_widget_draw_background(dvui_ButtonWidget* self);
+void dvui_button_widget_draw_focus(dvui_ButtonWidget* self);
+dvui_Options dvui_button_widget_style(dvui_ButtonWidget* self);
+bool dvui_button_widget_focused(dvui_ButtonWidget* self);
+bool dvui_button_widget_hovered(dvui_ButtonWidget* self);
+bool dvui_button_widget_pressed(dvui_ButtonWidget* self);
+bool dvui_button_widget_clicked(dvui_ButtonWidget* self);
+dvui_Widget dvui_button_widget_widget(dvui_ButtonWidget* self);
+dvui_WidgetData* dvui_button_widget_data(dvui_ButtonWidget* self);
+void dvui_button_widget_deinit(dvui_ButtonWidget* self);
 // DVUI: dvui.button – tlačítko bez textu; místo popisku je zástupce o velikosti
 // `label_size`. Vrací true, pokud bylo v tomto snímku kliknuto.
 bool dvui_button(dvui_Src src, dvui_Size label_size, dvui_ButtonInitOptions init_opts, dvui_Options opts);
@@ -857,13 +857,13 @@ bool dvui_button(dvui_Src src, dvui_Size label_size, dvui_ButtonInitOptions init
 
 typedef struct dvui_ScaleWidget {
     dvui_WidgetData wd;
-    float *scale;
+    float* scale;
     dvui_BasicLayout layout;
 } dvui_ScaleWidget;
 
-void dvui_scale_widget_init(dvui_ScaleWidget *self, dvui_Src src, float *scale, dvui_Options opts);
-dvui_Widget dvui_scale_widget_widget(dvui_ScaleWidget *self);
-void dvui_scale_widget_deinit(dvui_ScaleWidget *self);
+void dvui_scale_widget_init(dvui_ScaleWidget* self, dvui_Src src, float* scale, dvui_Options opts);
+dvui_Widget dvui_scale_widget_widget(dvui_ScaleWidget* self);
+void dvui_scale_widget_deinit(dvui_ScaleWidget* self);
 
 // --- ScrollInfo (DVUI: ScrollInfo.zig)
 
@@ -893,22 +893,22 @@ typedef struct dvui_ScrollInfo {
 
 // DVUI výchozí: vertical = .auto, horizontal = .none
 dvui_ScrollInfo dvui_scroll_info_default(void);
-float dvui_scroll_info_scroll_max(const dvui_ScrollInfo *si, dvui_Direction dir);
-float dvui_scroll_info_visible_fraction(const dvui_ScrollInfo *si, dvui_Direction dir);
-float dvui_scroll_info_offset(const dvui_ScrollInfo *si, dvui_Direction dir);
-float dvui_scroll_info_offset_from_max(const dvui_ScrollInfo *si, dvui_Direction dir);
-float dvui_scroll_info_offset_fraction(const dvui_ScrollInfo *si, dvui_Direction dir);
-void dvui_scroll_info_scroll_by_offset(dvui_ScrollInfo *si, dvui_Direction dir, float off);
-void dvui_scroll_info_scroll_to_offset(dvui_ScrollInfo *si, dvui_Direction dir, float off);
-void dvui_scroll_info_scroll_to_fraction(dvui_ScrollInfo *si, dvui_Direction dir, float fin);
-void dvui_scroll_info_scroll_page(dvui_ScrollInfo *si, dvui_Direction dir, bool up);
-void dvui_scroll_info_scroll_page_up(dvui_ScrollInfo *si, dvui_Direction dir);
-void dvui_scroll_info_scroll_page_down(dvui_ScrollInfo *si, dvui_Direction dir);
+float dvui_scroll_info_scroll_max(const dvui_ScrollInfo* si, dvui_Direction dir);
+float dvui_scroll_info_visible_fraction(const dvui_ScrollInfo* si, dvui_Direction dir);
+float dvui_scroll_info_offset(const dvui_ScrollInfo* si, dvui_Direction dir);
+float dvui_scroll_info_offset_from_max(const dvui_ScrollInfo* si, dvui_Direction dir);
+float dvui_scroll_info_offset_fraction(const dvui_ScrollInfo* si, dvui_Direction dir);
+void dvui_scroll_info_scroll_by_offset(dvui_ScrollInfo* si, dvui_Direction dir, float off);
+void dvui_scroll_info_scroll_to_offset(dvui_ScrollInfo* si, dvui_Direction dir, float off);
+void dvui_scroll_info_scroll_to_fraction(dvui_ScrollInfo* si, dvui_Direction dir, float fin);
+void dvui_scroll_info_scroll_page(dvui_ScrollInfo* si, dvui_Direction dir, bool up);
+void dvui_scroll_info_scroll_page_up(dvui_ScrollInfo* si, dvui_Direction dir);
+void dvui_scroll_info_scroll_page_down(dvui_ScrollInfo* si, dvui_Direction dir);
 
 // --- ScrollBar (DVUI: ScrollBarWidget.zig)
 
 typedef struct dvui_ScrollBarInitOptions {
-    dvui_ScrollInfo *scroll_info;
+    dvui_ScrollInfo* scroll_info;
     dvui_Direction direction;
     dvui_Id focus_id;
 } dvui_ScrollBarInitOptions;
@@ -916,7 +916,7 @@ typedef struct dvui_ScrollBarInitOptions {
 typedef struct dvui_ScrollBarWidget {
     dvui_WidgetData wd;
     dvui_Rect grab_rect;
-    dvui_ScrollInfo *si;
+    dvui_ScrollInfo* si;
     dvui_Id focus_id;
     dvui_Direction dir;
     bool highlight;
@@ -930,32 +930,32 @@ typedef struct dvui_ScrollBarGrab {
 
 extern dvui_Options dvui_scroll_bar_widget_defaults;
 
-void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget *self, dvui_Src src, dvui_ScrollBarInitOptions init_opts, dvui_Options opts);
-dvui_ScrollBarGrab dvui_scroll_bar_widget_grab(dvui_ScrollBarWidget *self);
+void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget* self, dvui_Src src, dvui_ScrollBarInitOptions init_opts, dvui_Options opts);
+dvui_ScrollBarGrab dvui_scroll_bar_widget_grab(dvui_ScrollBarWidget* self);
 void dvui_scroll_bar_grab_draw(dvui_ScrollBarGrab g);
-void dvui_scroll_bar_widget_deinit(dvui_ScrollBarWidget *self);
+void dvui_scroll_bar_widget_deinit(dvui_ScrollBarWidget* self);
 
 // --- ScrollContainer (DVUI: ScrollContainerWidget.zig)
 
 typedef struct dvui_ScrollAreaWidget dvui_ScrollAreaWidget;
 
 typedef struct dvui_ScrollContainerInitOptions {
-    dvui_ScrollAreaWidget *scroll_area;
+    dvui_ScrollAreaWidget* scroll_area;
     dvui_OptPoint frame_viewport;
     bool lock_visible;
     dvui_OptRect event_rect;
     // DVUI výchozí process_events_after = true; zde opačně kvůli {0}.
     bool no_process_events_after;
-    dvui_Point *user_scroll;
+    dvui_Point* user_scroll;
 } dvui_ScrollContainerInitOptions;
 
 typedef struct dvui_ScrollContainerWidget dvui_ScrollContainerWidget;
 struct dvui_ScrollContainerWidget {
     dvui_WidgetData wd;
-    dvui_ScrollInfo *si;
+    dvui_ScrollInfo* si;
     dvui_ScrollContainerInitOptions init_opts;
     dvui_Id last_focus;
-    dvui_ScrollContainerWidget *parent_scroll;
+    dvui_ScrollContainerWidget* parent_scroll;
     dvui_Id subwindow_id;
     dvui_Point frame_viewport;
     dvui_RectPhysical prev_clip;
@@ -968,47 +968,47 @@ struct dvui_ScrollContainerWidget {
     bool seen_scroll_drag;
 };
 
-dvui_ScrollContainerWidget *dvui_scroll_container_current(void);
-dvui_ScrollContainerWidget *dvui_scroll_container_scroll_set(dvui_ScrollContainerWidget *scroll);
+dvui_ScrollContainerWidget* dvui_scroll_container_current(void);
+dvui_ScrollContainerWidget* dvui_scroll_container_scroll_set(dvui_ScrollContainerWidget* scroll);
 
-void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget *self, dvui_Src src, dvui_ScrollInfo *io_scroll_info, dvui_ScrollContainerInitOptions init_options, dvui_Options opts);
-bool dvui_scroll_container_widget_match_event(dvui_ScrollContainerWidget *self, dvui_Event *e);
-void dvui_scroll_container_widget_process_events(dvui_ScrollContainerWidget *self);
-void dvui_scroll_container_widget_process_velocity_after(dvui_ScrollContainerWidget *self);
-dvui_Widget dvui_scroll_container_widget_widget(dvui_ScrollContainerWidget *self);
-dvui_WidgetData *dvui_scroll_container_widget_data(dvui_ScrollContainerWidget *self);
-dvui_Point dvui_scroll_container_widget_point_from_physical(dvui_ScrollContainerWidget *self, dvui_PointPhysical p);
-dvui_RectScale dvui_scroll_container_widget_screen_rect_scale(dvui_ScrollContainerWidget *self, dvui_Rect rect);
-void dvui_scroll_container_widget_min_size_for_child(dvui_ScrollContainerWidget *self, dvui_Size s);
-void dvui_scroll_container_widget_process_scroll_drag(dvui_ScrollContainerWidget *self, dvui_ScrollDragOptions sd);
-void dvui_scroll_container_widget_process_scroll_to(dvui_ScrollContainerWidget *self, dvui_ScrollToOptions st);
-void dvui_scroll_container_widget_process_events_after(dvui_ScrollContainerWidget *self);
-void dvui_scroll_container_widget_process_event_after(dvui_ScrollContainerWidget *self, dvui_Event *e);
-void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget *self);
+void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Src src, dvui_ScrollInfo* io_scroll_info, dvui_ScrollContainerInitOptions init_options, dvui_Options opts);
+bool dvui_scroll_container_widget_match_event(dvui_ScrollContainerWidget* self, dvui_Event* e);
+void dvui_scroll_container_widget_process_events(dvui_ScrollContainerWidget* self);
+void dvui_scroll_container_widget_process_velocity_after(dvui_ScrollContainerWidget* self);
+dvui_Widget dvui_scroll_container_widget_widget(dvui_ScrollContainerWidget* self);
+dvui_WidgetData* dvui_scroll_container_widget_data(dvui_ScrollContainerWidget* self);
+dvui_Point dvui_scroll_container_widget_point_from_physical(dvui_ScrollContainerWidget* self, dvui_PointPhysical p);
+dvui_RectScale dvui_scroll_container_widget_screen_rect_scale(dvui_ScrollContainerWidget* self, dvui_Rect rect);
+void dvui_scroll_container_widget_min_size_for_child(dvui_ScrollContainerWidget* self, dvui_Size s);
+void dvui_scroll_container_widget_process_scroll_drag(dvui_ScrollContainerWidget* self, dvui_ScrollDragOptions sd);
+void dvui_scroll_container_widget_process_scroll_to(dvui_ScrollContainerWidget* self, dvui_ScrollToOptions st);
+void dvui_scroll_container_widget_process_events_after(dvui_ScrollContainerWidget* self);
+void dvui_scroll_container_widget_process_event_after(dvui_ScrollContainerWidget* self, dvui_Event* e);
+void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget* self);
 
 // --- ScrollArea (DVUI: ScrollAreaWidget.zig)
 
 typedef struct dvui_ScrollAreaInitOptions {
-    dvui_ScrollInfo *scroll_info;
+    dvui_ScrollInfo* scroll_info;
     dvui_OptScrollMode vertical;   // výchozí .auto
     dvui_ScrollBarMode vertical_bar;
     dvui_OptScrollMode horizontal; // výchozí .none
     dvui_ScrollBarMode horizontal_bar;
     dvui_Id focus_id;
     dvui_OptPoint frame_viewport;
-    dvui_Point *frame_viewport_out;
+    dvui_Point* frame_viewport_out;
     bool lock_visible;
     // DVUI výchozí process_events_after = true a container = true; zde
     // opačně kvůli {0}.
     bool no_process_events_after;
     bool no_container;
-    dvui_Point *user_scroll;
+    dvui_Point* user_scroll;
 } dvui_ScrollAreaInitOptions;
 
 struct dvui_ScrollAreaWidget {
     // `si` je první, aby adresa hbox nebyla shodná s adresou celé struktury
     // (dvui_widget_is_allocated by jinak hbox považoval za alokovaný).
-    dvui_ScrollInfo *si;
+    dvui_ScrollInfo* si;
     dvui_BoxWidget hbox;
     bool has_vbar_grab;
     dvui_ScrollBarGrab vbar_grab;
@@ -1021,11 +1021,11 @@ struct dvui_ScrollAreaWidget {
 
 extern dvui_Options dvui_scroll_area_widget_defaults;
 
-void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget *self, dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts);
-dvui_WidgetData *dvui_scroll_area_widget_data(dvui_ScrollAreaWidget *self);
-void dvui_scroll_area_widget_set_container_rect(dvui_ScrollAreaWidget *self, dvui_Rect rect);
-void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget *self);
-dvui_ScrollAreaWidget *dvui_scroll_area(dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts);
+void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts);
+dvui_WidgetData* dvui_scroll_area_widget_data(dvui_ScrollAreaWidget* self);
+void dvui_scroll_area_widget_set_container_rect(dvui_ScrollAreaWidget* self, dvui_Rect rect);
+void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget* self);
+dvui_ScrollAreaWidget* dvui_scroll_area(dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts);
 
 // --- Floating (DVUI: FloatingWidget.zig)
 
@@ -1044,15 +1044,15 @@ typedef struct dvui_FloatingWidget {
     dvui_RenderFrontToBack render_ftb;
     dvui_WidgetData wd;
     dvui_SubwindowCurrentSetReturn prev_window_info;
-    dvui_ScrollContainerWidget *prev_scroll;
+    dvui_ScrollContainerWidget* prev_scroll;
     dvui_RectPhysical prev_clip;
     float scale_val;
     dvui_ScaleWidget scaler;
 } dvui_FloatingWidget;
 
-void dvui_floating_widget_init(dvui_FloatingWidget *self, dvui_Src src, dvui_FloatingInitOptions init_opts, dvui_Options opts);
-dvui_Widget dvui_floating_widget_widget(dvui_FloatingWidget *self);
-void dvui_floating_widget_deinit(dvui_FloatingWidget *self);
+void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_FloatingInitOptions init_opts, dvui_Options opts);
+dvui_Widget dvui_floating_widget_widget(dvui_FloatingWidget* self);
+void dvui_floating_widget_deinit(dvui_FloatingWidget* self);
 
 // --- FloatingTooltip (DVUI: FloatingTooltipWidget.zig)
 
@@ -1073,11 +1073,11 @@ typedef struct dvui_FloatingTooltipInitOptions {
 
 typedef struct dvui_FloatingTooltipWidget dvui_FloatingTooltipWidget;
 struct dvui_FloatingTooltipWidget {
-    dvui_FloatingTooltipWidget *parent_tooltip;
+    dvui_FloatingTooltipWidget* parent_tooltip;
     dvui_RenderFrontToBack render_ftb;
     dvui_WidgetData wd;
     dvui_SubwindowCurrentSetReturn prev_window_info;
-    dvui_ScrollContainerWidget *prev_scroll;
+    dvui_ScrollContainerWidget* prev_scroll;
     dvui_RectPhysical prev_clip;
     float scale_val;
     dvui_ScaleWidget scaler;
@@ -1091,12 +1091,12 @@ struct dvui_FloatingTooltipWidget {
 
 extern dvui_Options dvui_floating_tooltip_widget_defaults;
 
-void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget *self, dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Options opts);
+void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget* self, dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Options opts);
 // Vrací true, pokud se má tooltip ukázat; pak do něj lze vkládat widgety.
-bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget *self);
-dvui_Widget dvui_floating_tooltip_widget_widget(dvui_FloatingTooltipWidget *self);
-dvui_WidgetData *dvui_floating_tooltip_widget_data(dvui_FloatingTooltipWidget *self);
-void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget *self);
+bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget* self);
+dvui_Widget dvui_floating_tooltip_widget_widget(dvui_FloatingTooltipWidget* self);
+dvui_WidgetData* dvui_floating_tooltip_widget_data(dvui_FloatingTooltipWidget* self);
+void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget* self);
 // DVUI: dvui.tooltip – místo textu obsahuje zástupce o velikosti `content_size`.
 void dvui_tooltip(dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Size content_size, dvui_Options opts);
 
@@ -1117,9 +1117,9 @@ typedef struct dvui_FloatingWindowInitOptions {
     bool modal;
     bool has_modal_alpha;
     uint8_t modal_alpha;
-    dvui_Rect *rect;
+    dvui_Rect* rect;
     dvui_OptRect center_on;
-    bool *open_flag;
+    bool* open_flag;
     dvui_FloatingWindowResize resize;
     bool stay_above_parent_window;
     dvui_WindowAvoid window_avoid;
@@ -1143,7 +1143,7 @@ typedef struct dvui_FloatingWindowWidget {
     dvui_FloatingWindowInitOptions init_options;
     dvui_Options options;
     dvui_SubwindowCurrentSetReturn prev_window_info;
-    dvui_ScrollContainerWidget *prev_scroll;
+    dvui_ScrollContainerWidget* prev_scroll;
     dvui_Id prev_last_focus;
     bool has_layout;
     dvui_BoxWidget layout;
@@ -1159,25 +1159,25 @@ typedef struct dvui_FloatingWindowWidget {
 
 extern dvui_Options dvui_floating_window_widget_defaults;
 
-void dvui_floating_window_widget_init(dvui_FloatingWindowWidget *self, dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts);
-void dvui_floating_window_widget_draw_background(dvui_FloatingWindowWidget *self);
-void dvui_floating_window_widget_process_events_before(dvui_FloatingWindowWidget *self);
-void dvui_floating_window_widget_drag_area_set(dvui_FloatingWindowWidget *self, dvui_RectPhysical rect);
-void dvui_floating_window_widget_process_events_after(dvui_FloatingWindowWidget *self);
-void dvui_floating_window_widget_auto_size(dvui_FloatingWindowWidget *self);
-void dvui_floating_window_widget_auto_position(dvui_FloatingWindowWidget *self);
-void dvui_floating_window_widget_close(dvui_FloatingWindowWidget *self);
-dvui_Widget dvui_floating_window_widget_widget(dvui_FloatingWindowWidget *self);
-dvui_WidgetData *dvui_floating_window_widget_data(dvui_FloatingWindowWidget *self);
-void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget *self);
+void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts);
+void dvui_floating_window_widget_draw_background(dvui_FloatingWindowWidget* self);
+void dvui_floating_window_widget_process_events_before(dvui_FloatingWindowWidget* self);
+void dvui_floating_window_widget_drag_area_set(dvui_FloatingWindowWidget* self, dvui_RectPhysical rect);
+void dvui_floating_window_widget_process_events_after(dvui_FloatingWindowWidget* self);
+void dvui_floating_window_widget_auto_size(dvui_FloatingWindowWidget* self);
+void dvui_floating_window_widget_auto_position(dvui_FloatingWindowWidget* self);
+void dvui_floating_window_widget_close(dvui_FloatingWindowWidget* self);
+dvui_Widget dvui_floating_window_widget_widget(dvui_FloatingWindowWidget* self);
+dvui_WidgetData* dvui_floating_window_widget_data(dvui_FloatingWindowWidget* self);
+void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget* self);
 // DVUI: dvui.floatingWindow – init, processEventsBefore, drawBackground.
-dvui_FloatingWindowWidget *dvui_floating_window(dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts);
+dvui_FloatingWindowWidget* dvui_floating_window(dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts);
 
 // DVUI: dvui.windowHeader – lišta okna se zavíracím tlačítkem (bez titulku,
 // místo něj zástupce výšky textu). Vrací obdélník pro dragAreaSet.
 typedef struct dvui_WindowHeaderOptions {
     dvui_Size title_size;
-    bool *open_flag;
+    bool* open_flag;
 } dvui_WindowHeaderOptions;
 dvui_RectPhysical dvui_window_header(dvui_WindowHeaderOptions options);
 
@@ -1217,7 +1217,7 @@ typedef struct dvui_GridWidget dvui_GridWidget;
 
 // DVUI: GridWidget.CellWidget
 typedef struct dvui_GridCellWidget {
-    dvui_GridWidget *grid;
+    dvui_GridWidget* grid;
     size_t col;
     size_t row;
     bool grid_focus;
@@ -1227,15 +1227,15 @@ typedef struct dvui_GridCellWidget {
 
 // Jednoduché dynamické pole (alokované v aréně snímku).
 typedef struct dvui_GridFloatList {
-    float *items;
+    float* items;
     size_t len, cap;
 } dvui_GridFloatList;
 typedef struct dvui_GridRowHeightList {
-    dvui_GridRowHeight *items;
+    dvui_GridRowHeight* items;
     size_t len, cap;
 } dvui_GridRowHeightList;
 typedef struct dvui_GridRowOffsetList {
-    dvui_GridRowOffset *items;
+    dvui_GridRowOffset* items;
     size_t len, cap;
 } dvui_GridRowOffsetList;
 
@@ -1255,25 +1255,25 @@ struct dvui_GridWidget {
     dvui_GridAutoSize auto_size;
     dvui_Size default_min;
     bool shrink;
-    float *col_widths;
+    float* col_widths;
     size_t col_widths_len;
-    bool *col_expands;
+    bool* col_expands;
     size_t col_expands_len;
-    bool *col_expands_new;
-    bool *col_resizable;
+    bool* col_expands_new;
+    bool* col_resizable;
     size_t col_resizable_len;
     bool has_col_resize;
     size_t col_resize;
     float col_resize_amount;
     float col_expand;
     dvui_GridFloatList col_widths_auto;
-    float *col_header_height;
+    float* col_header_height;
     float col_header_height_auto;
-    dvui_OptF32 *row_height_default;
-    dvui_GridRowHeight *row_heights;
+    dvui_OptF32* row_height_default;
+    dvui_GridRowHeight* row_heights;
     size_t row_heights_len;
     dvui_GridRowHeightList row_heights_auto;
-    dvui_ScrollInfo *msi;
+    dvui_ScrollInfo* msi;
     dvui_ScrollAreaWidget scroll;
     dvui_ScrollInfo csi;
     bool has_cscroll;
@@ -1281,17 +1281,17 @@ struct dvui_GridWidget {
     bool has_bscroll;
     dvui_ScrollContainerWidget bscroll;
     dvui_Point frame_viewport;
-    bool *mouse_mode;
+    bool* mouse_mode;
 };
 
 extern dvui_Options dvui_grid_widget_defaults;
 
-void dvui_grid_widget_init(dvui_GridWidget *self, dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts);
-void dvui_grid_widget_auto_size(dvui_GridWidget *self, dvui_GridAutoSize auto_size);
+void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts);
+void dvui_grid_widget_auto_size(dvui_GridWidget* self, dvui_GridAutoSize auto_size);
 // Vrací první a poslední (exkluzivně) viditelný řádek. Vyžaduje `rows`.
-void dvui_grid_widget_rows_visible(dvui_GridWidget *self, size_t *first, size_t *last);
-dvui_Widget dvui_grid_widget_widget(dvui_GridWidget *self);
-dvui_WidgetData *dvui_grid_widget_data(dvui_GridWidget *self);
+void dvui_grid_widget_rows_visible(dvui_GridWidget* self, size_t* first, size_t* last);
+dvui_Widget dvui_grid_widget_widget(dvui_GridWidget* self);
+dvui_WidgetData* dvui_grid_widget_data(dvui_GridWidget* self);
 
 typedef struct dvui_GridColHeaderInitOptions {
     size_t col;
@@ -1299,7 +1299,7 @@ typedef struct dvui_GridColHeaderInitOptions {
     bool not_resizable;
 } dvui_GridColHeaderInitOptions;
 
-dvui_GridCellWidget *dvui_grid_widget_col_header(dvui_GridWidget *self, dvui_GridColHeaderInitOptions init_opts, dvui_Options opts);
+dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_GridColHeaderInitOptions init_opts, dvui_Options opts);
 
 typedef struct dvui_GridCellOptions {
     size_t col;
@@ -1307,21 +1307,21 @@ typedef struct dvui_GridCellOptions {
     bool not_col_resizable;
 } dvui_GridCellOptions;
 
-dvui_GridCellWidget *dvui_grid_widget_cell(dvui_GridWidget *self, dvui_GridCellOptions cell_opts, dvui_Options opts);
-void dvui_grid_widget_cell_min_size(dvui_GridWidget *self, size_t col, size_t row, dvui_Size min_size);
-float dvui_grid_widget_col_width(dvui_GridWidget *self, size_t col);
-float dvui_grid_widget_col_offset(dvui_GridWidget *self, size_t col);
-float dvui_grid_widget_row_height(dvui_GridWidget *self, size_t row);
-float dvui_grid_widget_row_offset(dvui_GridWidget *self, size_t row);
-bool dvui_grid_widget_cell_from_point(dvui_GridWidget *self, dvui_PointPhysical p, dvui_GridCell *out);
+dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_GridCellOptions cell_opts, dvui_Options opts);
+void dvui_grid_widget_cell_min_size(dvui_GridWidget* self, size_t col, size_t row, dvui_Size min_size);
+float dvui_grid_widget_col_width(dvui_GridWidget* self, size_t col);
+float dvui_grid_widget_col_offset(dvui_GridWidget* self, size_t col);
+float dvui_grid_widget_row_height(dvui_GridWidget* self, size_t row);
+float dvui_grid_widget_row_offset(dvui_GridWidget* self, size_t row);
+bool dvui_grid_widget_cell_from_point(dvui_GridWidget* self, dvui_PointPhysical p, dvui_GridCell* out);
 // Buňka pod myší (DVUI: cellHovered, jen myš).
-bool dvui_grid_widget_cell_hovered(dvui_GridWidget *self, dvui_GridCell *out);
-void dvui_grid_widget_deinit(dvui_GridWidget *self);
-dvui_GridWidget *dvui_grid(dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts);
+bool dvui_grid_widget_cell_hovered(dvui_GridWidget* self, dvui_GridCell* out);
+void dvui_grid_widget_deinit(dvui_GridWidget* self);
+dvui_GridWidget* dvui_grid(dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts);
 
-dvui_Widget dvui_grid_cell_widget_widget(dvui_GridCellWidget *self);
-dvui_WidgetData *dvui_grid_cell_widget_data(dvui_GridCellWidget *self);
-void dvui_grid_cell_widget_deinit(dvui_GridCellWidget *self);
+dvui_Widget dvui_grid_cell_widget_widget(dvui_GridCellWidget* self);
+dvui_WidgetData* dvui_grid_cell_widget_data(dvui_GridCellWidget* self);
+void dvui_grid_cell_widget_deinit(dvui_GridCellWidget* self);
 
 #ifdef __cplusplus
 }

@@ -5,17 +5,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     if (argc != 4) {
         fprintf(stderr, "usage: %s <input> <output.c> <symbol>\n", argv[0]);
         return 1;
     }
-    FILE *in = fopen(argv[1], "rb");
+    FILE* in = fopen(argv[1], "rb");
     if (!in) {
         fprintf(stderr, "embed: cannot open %s\n", argv[1]);
         return 1;
     }
-    FILE *out = fopen(argv[2], "wb");
+    FILE* out = fopen(argv[2], "wb");
     if (!out) {
         fprintf(stderr, "embed: cannot create %s\n", argv[2]);
         fclose(in);

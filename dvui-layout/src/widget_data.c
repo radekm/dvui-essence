@@ -46,14 +46,14 @@ dvui_WidgetData dvui_widget_data_init(dvui_Src src, dvui_WidgetDataInitOptions i
 }
 
 // DVUI: WidgetData.rectSet
-void dvui_widget_data_rect_set(dvui_WidgetData *wd, dvui_Rect r) {
+void dvui_widget_data_rect_set(dvui_WidgetData* wd, dvui_Rect r) {
     wd->rect = r;
     wd->rect_scale = dvui_widget_data_rect_scale_from_parent(wd);
     wd->has_rect_scale = true;
 }
 
 // DVUI: WidgetData.register
-void dvui_widget_data_register(dvui_WidgetData *wd) {
+void dvui_widget_data_register(dvui_WidgetData* wd) {
     dvui_widget_data_rect_set(wd, wd->rect);
 
     // U běžných widgetů stačí tady; subwindows musí volat
@@ -66,7 +66,7 @@ void dvui_widget_data_register(dvui_WidgetData *wd) {
         });
     }
 
-    dvui_Window *cw = dvui_current_window();
+    dvui_Window* cw = dvui_current_window();
     cw->last_registered_id_this_frame = wd->id;
 
     const dvui_Id focused_widget_id = dvui_focused_widget_id();
@@ -85,7 +85,7 @@ void dvui_widget_data_register(dvui_WidgetData *wd) {
     }
 
     // duplicitní id: min. velikost už byla tento snímek uložena
-    dvui_MapEntry *e = dvui_map_get(&cw->min_sizes, wd->id);
+    dvui_MapEntry* e = dvui_map_get(&cw->min_sizes, wd->id);
     if (e && e->used) {
         DVUI_LOG_ERR("%s:%d duplicate widget id %llx (widget \"%s\"); you may need to pass .id_extra = <loop index> as widget options",
                      wd->src.file, wd->src.line, (unsigned long long)wd->id, wd->options.name ? wd->options.name : "???");
@@ -93,10 +93,10 @@ void dvui_widget_data_register(dvui_WidgetData *wd) {
 }
 
 // DVUI: WidgetData.visible
-bool dvui_widget_data_visible(const dvui_WidgetData *wd) { return dvui_rect_visible(dvui_widget_data_border_rect_scale(wd).r); }
+bool dvui_widget_data_visible(const dvui_WidgetData* wd) { return dvui_rect_visible(dvui_widget_data_border_rect_scale(wd).r); }
 
 // DVUI: WidgetData.borderAndBackground (bez stínu, ninepatch a zaoblení)
-void dvui_widget_data_border_and_background(const dvui_WidgetData *wd, dvui_BorderAndBackgroundOptions opts) {
+void dvui_widget_data_border_and_background(const dvui_WidgetData* wd, dvui_BorderAndBackgroundOptions opts) {
     if (!dvui_widget_data_visible(wd)) return;
 
     bool bg = dvui_options_background_get(&wd->options);
@@ -129,7 +129,7 @@ void dvui_widget_data_border_and_background(const dvui_WidgetData *wd, dvui_Bord
 }
 
 // DVUI: WidgetData.focusBorder
-void dvui_widget_data_focus_border(const dvui_WidgetData *wd) {
+void dvui_widget_data_focus_border(const dvui_WidgetData* wd) {
     if (dvui_widget_data_visible(wd)) {
         const dvui_RectScale rs = dvui_widget_data_border_rect_scale(wd);
         const float thick = 2 * rs.s;
@@ -137,48 +137,48 @@ void dvui_widget_data_focus_border(const dvui_WidgetData *wd) {
     }
 }
 
-dvui_RectScale dvui_widget_data_rect_scale_from_parent(const dvui_WidgetData *wd) {
+dvui_RectScale dvui_widget_data_rect_scale_from_parent(const dvui_WidgetData* wd) {
     if (wd->init_options.subwindow) return dvui_rect_scale_rect_to_rect_scale(dvui_window_rect_scale(), wd->rect);
     return dvui_widget_screen_rect_scale(wd->parent, wd->rect);
 }
 
-dvui_RectScale dvui_widget_data_rect_scale(const dvui_WidgetData *wd) {
+dvui_RectScale dvui_widget_data_rect_scale(const dvui_WidgetData* wd) {
     if (wd->has_rect_scale) return wd->rect_scale;
     // widget se ptá před register (např. kvůli přetahování)
     return dvui_widget_data_rect_scale_from_parent(wd);
 }
 
-dvui_Rect dvui_widget_data_border_rect(const dvui_WidgetData *wd) {
+dvui_Rect dvui_widget_data_border_rect(const dvui_WidgetData* wd) {
     return dvui_rect_inset(wd->rect, dvui_options_margin_get(&wd->options));
 }
 
-dvui_RectScale dvui_widget_data_border_rect_scale(const dvui_WidgetData *wd) {
+dvui_RectScale dvui_widget_data_border_rect_scale(const dvui_WidgetData* wd) {
     const dvui_Rect r = dvui_rect_offset_neg(dvui_widget_data_border_rect(wd), wd->rect);
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_rect_scale(wd), r);
 }
 
-dvui_Rect dvui_widget_data_background_rect(const dvui_WidgetData *wd) {
+dvui_Rect dvui_widget_data_background_rect(const dvui_WidgetData* wd) {
     return dvui_rect_inset(dvui_rect_inset(wd->rect, dvui_options_margin_get(&wd->options)), dvui_options_border_get(&wd->options));
 }
 
-dvui_RectScale dvui_widget_data_background_rect_scale(const dvui_WidgetData *wd) {
+dvui_RectScale dvui_widget_data_background_rect_scale(const dvui_WidgetData* wd) {
     const dvui_Rect r = dvui_rect_offset_neg(dvui_widget_data_background_rect(wd), wd->rect);
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_rect_scale(wd), r);
 }
 
-dvui_Rect dvui_widget_data_content_rect(const dvui_WidgetData *wd) {
+dvui_Rect dvui_widget_data_content_rect(const dvui_WidgetData* wd) {
     return dvui_rect_inset(dvui_widget_data_background_rect(wd), dvui_options_padding_get(&wd->options));
 }
 
-dvui_RectScale dvui_widget_data_content_rect_scale(const dvui_WidgetData *wd) {
+dvui_RectScale dvui_widget_data_content_rect_scale(const dvui_WidgetData* wd) {
     const dvui_Rect r = dvui_rect_offset_neg(dvui_widget_data_content_rect(wd), wd->rect);
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_rect_scale(wd), r);
 }
 
-void dvui_widget_data_min_size_max(dvui_WidgetData *wd, dvui_Size s) { wd->min_size = dvui_size_max(wd->min_size, s); }
+void dvui_widget_data_min_size_max(dvui_WidgetData* wd, dvui_Size s) { wd->min_size = dvui_size_max(wd->min_size, s); }
 
 // DVUI: WidgetData.minSizeSetAndRefresh
-void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData *wd) {
+void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData* wd) {
     wd->min_size = dvui_size_min(wd->min_size, dvui_options_max_size_get(&wd->options));
 
     dvui_Size ms;
@@ -193,8 +193,8 @@ void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData *wd) {
         dvui_refresh(nullptr, DVUI_SRC, wd->id);
     }
 
-    dvui_Window *cw = dvui_current_window();
-    dvui_MapEntry *e = dvui_map_get_or_put(&cw->min_sizes, wd->id);
+    dvui_Window* cw = dvui_current_window();
+    dvui_MapEntry* e = dvui_map_get_or_put(&cw->min_sizes, wd->id);
     if (!e->ptr) {
         e->ptr = malloc(sizeof(dvui_Size));
         e->size = sizeof(dvui_Size);
@@ -204,11 +204,11 @@ void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData *wd) {
 }
 
 // DVUI: WidgetData.minSizeReportToParent
-void dvui_widget_data_min_size_report_to_parent(const dvui_WidgetData *wd) {
+void dvui_widget_data_min_size_report_to_parent(const dvui_WidgetData* wd) {
     if (!wd->options.rect.has) dvui_widget_min_size_for_child(wd->parent, wd->min_size);
 }
 
-bool dvui_widget_data_is_root(const dvui_WidgetData *wd) {
+bool dvui_widget_data_is_root(const dvui_WidgetData* wd) {
     // okno je samo sobě rodičem
     return wd->id == dvui_widget_data(wd->parent)->id;
 }

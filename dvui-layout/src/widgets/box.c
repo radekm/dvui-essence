@@ -2,23 +2,23 @@
 // DVUI: src/widgets/BoxWidget.zig
 #include "../internal.h"
 
-static dvui_WidgetData *box_data(void *ptr) { return &((dvui_BoxWidget *)ptr)->wd; }
+static dvui_WidgetData* box_data(void* ptr) { return &((dvui_BoxWidget*)ptr)->wd; }
 
-static dvui_Rect box_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+static dvui_Rect box_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
     return dvui_box_widget_rect_for(ptr, id, min_size, e, g);
 }
 
-static dvui_RectScale box_screen_rect_scale(void *ptr, dvui_Rect r) { return dvui_box_widget_screen_rect_scale(ptr, r); }
+static dvui_RectScale box_screen_rect_scale(void* ptr, dvui_Rect r) { return dvui_box_widget_screen_rect_scale(ptr, r); }
 
-static void box_min_size_for_child(void *ptr, dvui_Size s) { dvui_box_widget_min_size_for_child(ptr, s); }
+static void box_min_size_for_child(void* ptr, dvui_Size s) { dvui_box_widget_min_size_for_child(ptr, s); }
 
 static const dvui_WidgetVTable box_vtable = {box_data, box_rect_for, box_screen_rect_scale, box_min_size_for_child};
 
-dvui_Widget dvui_box_widget_widget(dvui_BoxWidget *self) { return (dvui_Widget){self, &box_vtable}; }
-dvui_WidgetData *dvui_box_widget_data(dvui_BoxWidget *self) { return &self->wd; }
+dvui_Widget dvui_box_widget_widget(dvui_BoxWidget* self) { return (dvui_Widget){self, &box_vtable}; }
+dvui_WidgetData* dvui_box_widget_data(dvui_BoxWidget* self) { return &self->wd; }
 
 // DVUI: BoxWidget.init
-void dvui_box_widget_init(dvui_BoxWidget *self, dvui_Src src, dvui_BoxInitOptions init_options, dvui_Options opts) {
+void dvui_box_widget_init(dvui_BoxWidget* self, dvui_Src src, dvui_BoxInitOptions init_options, dvui_Options opts) {
     const dvui_Options defaults = {.name = "Box"};
     const dvui_WidgetData wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, dvui_options_override(defaults, opts));
     *self = (dvui_BoxWidget){
@@ -26,7 +26,7 @@ void dvui_box_widget_init(dvui_BoxWidget *self, dvui_Src src, dvui_BoxInitOption
         .init_opts = init_options,
         .first_child = true,
     };
-    const dvui_BoxData *dp = DVUI_DATA_GET(wd.id, "_data", dvui_BoxData);
+    const dvui_BoxData* dp = DVUI_DATA_GET(wd.id, "_data", dvui_BoxData);
     if (dp) {
         self->has_data_prev = true;
         self->data_prev = *dp;
@@ -36,11 +36,11 @@ void dvui_box_widget_init(dvui_BoxWidget *self, dvui_Src src, dvui_BoxInitOption
     dvui_parent_set(dvui_box_widget_widget(self));
 }
 
-void dvui_box_widget_draw_background(dvui_BoxWidget *self) {
+void dvui_box_widget_draw_background(dvui_BoxWidget* self) {
     dvui_widget_data_border_and_background(&self->wd, (dvui_BorderAndBackgroundOptions){0});
 }
 
-static void remove_space(dvui_BoxWidget *self, dvui_Rect r, dvui_Gravity g) {
+static void remove_space(dvui_BoxWidget* self, dvui_Rect r, dvui_Gravity g) {
     if (self->init_opts.dir == DVUI_HORIZONTAL) {
         self->child_rect.w = DVUI_MAX(0.0f, self->child_rect.w - r.w);
         if (g.x <= 0.5f) self->child_rect.x += r.w;
@@ -51,7 +51,7 @@ static void remove_space(dvui_BoxWidget *self, dvui_Rect r, dvui_Gravity g) {
 }
 
 // DVUI: BoxWidget.rectFor
-dvui_Rect dvui_box_widget_rect_for(dvui_BoxWidget *self, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+dvui_Rect dvui_box_widget_rect_for(dvui_BoxWidget* self, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
     const dvui_Direction dir = self->init_opts.dir;
     if (self->first_child) {
         self->first_child = false;
@@ -158,12 +158,12 @@ dvui_Rect dvui_box_widget_rect_for(dvui_BoxWidget *self, dvui_Id id, dvui_Size m
     return ret;
 }
 
-dvui_RectScale dvui_box_widget_screen_rect_scale(dvui_BoxWidget *self, dvui_Rect rect) {
+dvui_RectScale dvui_box_widget_screen_rect_scale(dvui_BoxWidget* self, dvui_Rect rect) {
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&self->wd), rect);
 }
 
 // DVUI: BoxWidget.minSizeForChild
-void dvui_box_widget_min_size_for_child(dvui_BoxWidget *self, dvui_Size s) {
+void dvui_box_widget_min_size_for_child(dvui_BoxWidget* self, dvui_Size s) {
     self->child_id = 0;
 
     if (self->child_positioned) {
@@ -183,7 +183,7 @@ void dvui_box_widget_min_size_for_child(dvui_BoxWidget *self, dvui_Size s) {
 }
 
 // DVUI: BoxWidget.deinit
-void dvui_box_widget_deinit(dvui_BoxWidget *self) {
+void dvui_box_widget_deinit(dvui_BoxWidget* self) {
     const bool horizontal = self->init_opts.dir == DVUI_HORIZONTAL;
     const bool extra_space = (horizontal ? self->child_rect.w : self->child_rect.h) > 0.001f;
     const float space = self->init_opts.equal_space ? self->max_space * self->packed_children : self->min_space_taken;
@@ -214,8 +214,8 @@ void dvui_box_widget_deinit(dvui_BoxWidget *self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-dvui_BoxWidget *dvui_box(dvui_Src src, dvui_BoxInitOptions init_opts, dvui_Options opts) {
-    dvui_BoxWidget *ret = dvui_widget_alloc(sizeof *ret);
+dvui_BoxWidget* dvui_box(dvui_Src src, dvui_BoxInitOptions init_opts, dvui_Options opts) {
+    dvui_BoxWidget* ret = dvui_widget_alloc(sizeof *ret);
     dvui_box_widget_init(ret, src, init_opts, opts);
     dvui_box_widget_draw_background(ret);
     return ret;

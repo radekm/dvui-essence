@@ -62,6 +62,13 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 - Každou vědomou odchylku od DVUI zapiš do sekce „Odchylky od DVUI“
   v `README.md` příslušného projektu. Neodchyluj se bez důvodu.
 
+## Styl kódu
+
+- Hvězdička ukazatele patří k typu: `Typ* p`, `const char* name`,
+  `void** items`, `(dvui_Window*)ptr`, `dvui_WidgetData* dvui_widget_data(…)`.
+  Nepiš `Typ *p`.
+- V jedné deklaraci deklaruj jen jeden ukazatel (`Typ* a; Typ* b;`, ne `Typ* a, *b;`).
+
 ## Kvalita
 
 - Před commitem musí projít `meson test` daného projektu.

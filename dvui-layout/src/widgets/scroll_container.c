@@ -5,12 +5,12 @@
 #include <math.h>
 
 // DVUI: ScrollContainerWidget.scroll_current – řetěz vnořených scroll kontejnerů
-static dvui_ScrollContainerWidget *scroll_current = nullptr;
+static dvui_ScrollContainerWidget* scroll_current = nullptr;
 
-dvui_ScrollContainerWidget *dvui_scroll_container_current(void) { return scroll_current; }
+dvui_ScrollContainerWidget* dvui_scroll_container_current(void) { return scroll_current; }
 
-dvui_ScrollContainerWidget *dvui_scroll_container_scroll_set(dvui_ScrollContainerWidget *scroll) {
-    dvui_ScrollContainerWidget *ret = scroll_current;
+dvui_ScrollContainerWidget* dvui_scroll_container_scroll_set(dvui_ScrollContainerWidget* scroll) {
+    dvui_ScrollContainerWidget* ret = scroll_current;
     scroll_current = scroll;
     return ret;
 }
@@ -23,18 +23,18 @@ static const dvui_Options defaults = {
     .style = {.has = true, .v = DVUI_STYLE_WINDOW},
 };
 
-static dvui_WidgetData *sc_data(void *ptr) { return &((dvui_ScrollContainerWidget *)ptr)->wd; }
-static dvui_Rect sc_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
-static dvui_RectScale sc_screen_rect_scale(void *ptr, dvui_Rect r) { return dvui_scroll_container_widget_screen_rect_scale(ptr, r); }
-static void sc_min_size_for_child(void *ptr, dvui_Size s) { dvui_scroll_container_widget_min_size_for_child(ptr, s); }
+static dvui_WidgetData* sc_data(void* ptr) { return &((dvui_ScrollContainerWidget*)ptr)->wd; }
+static dvui_Rect sc_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g);
+static dvui_RectScale sc_screen_rect_scale(void* ptr, dvui_Rect r) { return dvui_scroll_container_widget_screen_rect_scale(ptr, r); }
+static void sc_min_size_for_child(void* ptr, dvui_Size s) { dvui_scroll_container_widget_min_size_for_child(ptr, s); }
 
 static const dvui_WidgetVTable sc_vtable = {sc_data, sc_rect_for, sc_screen_rect_scale, sc_min_size_for_child};
 
-dvui_Widget dvui_scroll_container_widget_widget(dvui_ScrollContainerWidget *self) { return (dvui_Widget){self, &sc_vtable}; }
-dvui_WidgetData *dvui_scroll_container_widget_data(dvui_ScrollContainerWidget *self) { return &self->wd; }
+dvui_Widget dvui_scroll_container_widget_widget(dvui_ScrollContainerWidget* self) { return (dvui_Widget){self, &sc_vtable}; }
+dvui_WidgetData* dvui_scroll_container_widget_data(dvui_ScrollContainerWidget* self) { return &self->wd; }
 
 // DVUI: ScrollContainerWidget.init
-void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget *self, dvui_Src src, dvui_ScrollInfo *io_scroll_info, dvui_ScrollContainerInitOptions init_options, dvui_Options opts) {
+void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Src src, dvui_ScrollInfo* io_scroll_info, dvui_ScrollContainerInitOptions init_options, dvui_Options opts) {
     const dvui_Options options = dvui_options_override(defaults, opts);
     *self = (dvui_ScrollContainerWidget){
         .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){.no_scroll_when_focused = true}, options),
@@ -65,7 +65,7 @@ void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget *self, dvui_Sr
 
     self->lock_visible = self->init_opts.lock_visible;
     if (self->lock_visible) {
-        const dvui_Id *fv = DVUI_DATA_GET(self->wd.id, "_fv_id", dvui_Id);
+        const dvui_Id* fv = DVUI_DATA_GET(self->wd.id, "_fv_id", dvui_Id);
         if (fv) {
             self->first_visible_id = *fv;
         } else {
@@ -73,9 +73,9 @@ void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget *self, dvui_Sr
             self->lock_visible = false;
             self->first_visible_id = 0;
         }
-        const dvui_Point *off = DVUI_DATA_GET(self->wd.id, "_fv_offset", dvui_Point);
+        const dvui_Point* off = DVUI_DATA_GET(self->wd.id, "_fv_offset", dvui_Point);
         if (off) self->first_visible_offset = *off;
-        const dvui_Point *vp = DVUI_DATA_GET(self->wd.id, "_fv_viewport", dvui_Point);
+        const dvui_Point* vp = DVUI_DATA_GET(self->wd.id, "_fv_viewport", dvui_Point);
         if (vp) self->first_visible_viewport = *vp;
     }
 
@@ -83,20 +83,20 @@ void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget *self, dvui_Sr
     self->parent_scroll = dvui_scroll_container_scroll_set(self);
 }
 
-bool dvui_scroll_container_widget_match_event(dvui_ScrollContainerWidget *self, dvui_Event *e) {
+bool dvui_scroll_container_widget_match_event(dvui_ScrollContainerWidget* self, dvui_Event* e) {
     const dvui_RectPhysical r = self->init_opts.event_rect.has ? self->init_opts.event_rect.v : dvui_widget_data_border_rect_scale(&self->wd).r;
     return dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .r = r});
 }
 
 // DVUI: ScrollContainerWidget.processEvents (zpracování doteků zde odpadá)
-void dvui_scroll_container_widget_process_events(dvui_ScrollContainerWidget *self) {
+void dvui_scroll_container_widget_process_events(dvui_ScrollContainerWidget* self) {
     // mohlo se změnit událostmi
     self->frame_viewport = self->init_opts.frame_viewport.has ? self->init_opts.frame_viewport.v : dvui_rect_top_left(self->si->viewport);
 }
 
 // DVUI: ScrollContainerWidget.processVelocityAfter
-void dvui_scroll_container_widget_process_velocity_after(dvui_ScrollContainerWidget *self) {
-    dvui_ScrollInfo *si = self->si;
+void dvui_scroll_container_widget_process_velocity_after(dvui_ScrollContainerWidget* self) {
+    dvui_ScrollInfo* si = self->si;
     const float secs = dvui_seconds_since_last_frame();
     // rychlost je jen od doteku – tlumení (prst je vždy nahoře)
     if (dvui_point_non_zero(si->velocity)) {
@@ -158,8 +158,8 @@ void dvui_scroll_container_widget_process_velocity_after(dvui_ScrollContainerWid
 }
 
 // DVUI: ScrollContainerWidget.rectFor
-static dvui_Rect sc_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
-    dvui_ScrollContainerWidget *self = ptr;
+static dvui_Rect sc_rect_for(void* ptr, dvui_Id id, dvui_Size min_size, dvui_Expand e, dvui_Gravity g) {
+    dvui_ScrollContainerWidget* self = ptr;
     // děti skládáme svisle, problém je jen svislé roztažení
     if (self->seen_expanded_child) {
         // Roztažené dítě dostalo zbytek místa a teď chce místo další dítě.
@@ -169,7 +169,7 @@ static dvui_Rect sc_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Exp
         self->seen_expanded_child = true;
     }
 
-    const dvui_ScrollInfo *si = self->si;
+    const dvui_ScrollInfo* si = self->si;
     const float y = self->next_virtual_size.h;
 
     float h = 0;
@@ -211,11 +211,11 @@ static dvui_Rect sc_rect_for(void *ptr, dvui_Id id, dvui_Size min_size, dvui_Exp
     return ret;
 }
 
-dvui_Point dvui_scroll_container_widget_point_from_physical(dvui_ScrollContainerWidget *self, dvui_PointPhysical p) {
+dvui_Point dvui_scroll_container_widget_point_from_physical(dvui_ScrollContainerWidget* self, dvui_PointPhysical p) {
     return dvui_point_plus(dvui_rect_scale_point_from_physical(dvui_widget_data_content_rect_scale(&self->wd), p), self->frame_viewport);
 }
 
-dvui_RectScale dvui_scroll_container_widget_screen_rect_scale(dvui_ScrollContainerWidget *self, dvui_Rect rect) {
+dvui_RectScale dvui_scroll_container_widget_screen_rect_scale(dvui_ScrollContainerWidget* self, dvui_Rect rect) {
     dvui_Rect r = rect;
     if (self->lock_visible) {
         // první viditelný ještě nebyl nalezen – mimo obrazovku
@@ -228,16 +228,16 @@ dvui_RectScale dvui_scroll_container_widget_screen_rect_scale(dvui_ScrollContain
     return dvui_rect_scale_rect_to_rect_scale(dvui_widget_data_content_rect_scale(&self->wd), r);
 }
 
-void dvui_scroll_container_widget_min_size_for_child(dvui_ScrollContainerWidget *self, dvui_Size s) {
+void dvui_scroll_container_widget_min_size_for_child(dvui_ScrollContainerWidget* self, dvui_Size s) {
     self->next_virtual_size.h += s.h;
     self->next_virtual_size.w = DVUI_MAX(self->next_virtual_size.w, s.w);
 }
 
 // DVUI: ScrollContainerWidget.processScrollDrag
-void dvui_scroll_container_widget_process_scroll_drag(dvui_ScrollContainerWidget *self, dvui_ScrollDragOptions sd) {
+void dvui_scroll_container_widget_process_scroll_drag(dvui_ScrollContainerWidget* self, dvui_ScrollDragOptions sd) {
     const dvui_RectScale rs = dvui_widget_data_content_rect_scale(&self->wd);
     const float secs = dvui_seconds_since_last_frame();
-    dvui_ScrollInfo *si = self->si;
+    dvui_ScrollInfo* si = self->si;
     float scrolly = 0;
     if (sd.mouse_pt.y <= rs.r.y && sd.screen_rect.y < rs.r.y && si->viewport.y > 0) {
         scrolly = !self->seen_scroll_drag ? -200 * secs : -5;
@@ -277,8 +277,8 @@ void dvui_scroll_container_widget_process_scroll_drag(dvui_ScrollContainerWidget
 }
 
 // DVUI: ScrollContainerWidget.processScrollTo
-void dvui_scroll_container_widget_process_scroll_to(dvui_ScrollContainerWidget *self, dvui_ScrollToOptions st) {
-    dvui_ScrollInfo *si = self->si;
+void dvui_scroll_container_widget_process_scroll_to(dvui_ScrollContainerWidget* self, dvui_ScrollToOptions st) {
+    dvui_ScrollInfo* si = self->si;
     const dvui_Point before = dvui_rect_top_left(si->viewport);
     const dvui_RectScale rs = dvui_widget_data_content_rect_scale(&self->wd);
 
@@ -333,20 +333,20 @@ void dvui_scroll_container_widget_process_scroll_to(dvui_ScrollContainerWidget *
 }
 
 // DVUI: ScrollContainerWidget.processEventsAfter
-void dvui_scroll_container_widget_process_events_after(dvui_ScrollContainerWidget *self) {
+void dvui_scroll_container_widget_process_events_after(dvui_ScrollContainerWidget* self) {
     const dvui_Id focus_id = dvui_last_focused_id_in_frame_since(self->last_focus);
     const dvui_RectPhysical r = self->init_opts.event_rect.has ? self->init_opts.event_rect.v : dvui_widget_data_border_rect_scale(&self->wd).r;
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .focus_id = focus_id, .r = r})) continue;
         dvui_scroll_container_widget_process_event_after(self, e);
     }
 }
 
-static void scroll_key(dvui_ScrollContainerWidget *self, dvui_Event *e, dvui_Direction dir, float amount) {
-    dvui_ScrollInfo *si = self->si;
+static void scroll_key(dvui_ScrollContainerWidget* self, dvui_Event* e, dvui_Direction dir, float amount) {
+    dvui_ScrollInfo* si = self->si;
     const dvui_ScrollMode mode = dir == DVUI_VERTICAL ? si->vertical : si->horizontal;
     if (mode != DVUI_SCROLL_NONE && dvui_scroll_info_scroll_max(si, dir) > 0.0f) {
         dvui_event_handle(e, &self->wd);
@@ -363,8 +363,8 @@ static void scroll_key(dvui_ScrollContainerWidget *self, dvui_Event *e, dvui_Dir
 }
 
 // DVUI: ScrollContainerWidget.processEventAfter
-void dvui_scroll_container_widget_process_event_after(dvui_ScrollContainerWidget *self, dvui_Event *e) {
-    dvui_ScrollInfo *si = self->si;
+void dvui_scroll_container_widget_process_event_after(dvui_ScrollContainerWidget* self, dvui_Event* e) {
+    dvui_ScrollInfo* si = self->si;
     if (e->kind == DVUI_EVENT_MOUSE) {
         const dvui_EventMouse me = e->evt.mouse;
         if (me.action == DVUI_MOUSE_FOCUS) {
@@ -423,7 +423,7 @@ void dvui_scroll_container_widget_process_event_after(dvui_ScrollContainerWidget
 }
 
 // DVUI: ScrollContainerWidget.deinit
-void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget *self) {
+void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget* self) {
     // clip obnovíme před processEventsAfter – event_rect může být mimo clip
     dvui_clip_set(self->prev_clip);
 
@@ -436,7 +436,7 @@ void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget *self) {
     DVUI_DATA_SET(self->wd.id, "_fv_offset", dvui_Point, self->first_visible_offset);
     DVUI_DATA_SET(self->wd.id, "_fv_viewport", dvui_Point, self->first_visible_viewport);
 
-    dvui_ScrollInfo *si = self->si;
+    dvui_ScrollInfo* si = self->si;
     const dvui_Size padded = dvui_options_pad_size(&self->wd.options, self->next_virtual_size);
     switch (si->horizontal) {
     case DVUI_SCROLL_NONE: self->wd.min_size.w = padded.w; break;

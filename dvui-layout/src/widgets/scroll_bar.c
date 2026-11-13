@@ -7,12 +7,12 @@ dvui_Options dvui_scroll_bar_widget_defaults = {
     .min_size_content = {.has = true, .v = {10, 10}},
 };
 
-static void process_events(dvui_ScrollBarWidget *self, dvui_RectPhysical grabrs) {
+static void process_events(dvui_ScrollBarWidget* self, dvui_RectPhysical grabrs) {
     const dvui_RectScale rs = dvui_widget_data_border_rect_scale(&self->wd);
     size_t n;
-    dvui_Event *evts = dvui_events(&n);
+    dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
-        dvui_Event *e = &evts[i];
+        dvui_Event* e = &evts[i];
         if (!dvui_event_match_simple(e, &self->wd)) continue;
         if (e->kind != DVUI_EVENT_MOUSE) continue;
         const dvui_EventMouse me = e->evt.mouse;
@@ -92,7 +92,7 @@ static void process_events(dvui_ScrollBarWidget *self, dvui_RectPhysical grabrs)
 }
 
 // DVUI: ScrollBarWidget.init
-void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget *self, dvui_Src src, dvui_ScrollBarInitOptions init_opts, dvui_Options opts) {
+void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget* self, dvui_Src src, dvui_ScrollBarInitOptions init_opts, dvui_Options opts) {
     *self = (dvui_ScrollBarWidget){
         .si = init_opts.scroll_info,
         .focus_id = init_opts.focus_id,
@@ -123,7 +123,7 @@ void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget *self, dvui_Src src, dvui_
 void dvui_scroll_bar_grab_draw(dvui_ScrollBarGrab g) { dvui_render_fill_rect(g.rect, g.color, false); }
 
 // DVUI: ScrollBarWidget.grab
-dvui_ScrollBarGrab dvui_scroll_bar_widget_grab(dvui_ScrollBarWidget *self) {
+dvui_ScrollBarGrab dvui_scroll_bar_widget_grab(dvui_ScrollBarWidget* self) {
     const dvui_Color text = dvui_options_color(&self->wd.options, DVUI_COLOR_TEXT);
     const float hover_t = dvui_hover_fade(self->wd.id, self->highlight);
     const dvui_Color fill = dvui_captured(self->wd.id) ? dvui_color_opacity(text, 0.3f)
@@ -134,7 +134,7 @@ dvui_ScrollBarGrab dvui_scroll_bar_widget_grab(dvui_ScrollBarWidget *self) {
     };
 }
 
-void dvui_scroll_bar_widget_deinit(dvui_ScrollBarWidget *self) {
+void dvui_scroll_bar_widget_deinit(dvui_ScrollBarWidget* self) {
     dvui_widget_data_min_size_set_and_refresh(&self->wd);
     dvui_widget_data_min_size_report_to_parent(&self->wd);
 }

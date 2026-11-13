@@ -44,26 +44,26 @@ static int checks = 0;
 
 typedef struct Harness {
     dvui_TestingBackend tb;
-    dvui_Window *win;
+    dvui_Window* win;
     int64_t time;
 } Harness;
 
-static void harness_init(Harness *h, float w, float hgt) {
+static void harness_init(Harness* h, float w, float hgt) {
     dvui_testing_backend_init(&h->tb, (dvui_Size){w, hgt});
     h->win = dvui_window_create(dvui_testing_backend(&h->tb));
     h->time = 1000000;
 }
 
-static void harness_deinit(Harness *h) {
+static void harness_deinit(Harness* h) {
     dvui_window_destroy(h->win);
     dvui_testing_backend_deinit(&h->tb);
 }
 
-typedef void (*FrameFn)(void *ctx);
-typedef void (*EventsFn)(dvui_Window *win, void *ctx);
+typedef void (*FrameFn)(void* ctx);
+typedef void (*EventsFn)(dvui_Window* win, void* ctx);
 
 // Jeden snímek; vrací výsledek dvui_window_end.
-static int64_t step(Harness *h, EventsFn events, FrameFn frame, void *ctx) {
+static int64_t step(Harness* h, EventsFn events, FrameFn frame, void* ctx) {
     h->time += 16000000; // 16 ms
     dvui_window_begin(h->win, h->time);
     if (events) events(h->win, ctx);
@@ -72,14 +72,14 @@ static int64_t step(Harness *h, EventsFn events, FrameFn frame, void *ctx) {
 }
 
 // Opakuje snímky, dokud dvui nechce další (DVUI: testing.settle).
-static int settle(Harness *h, FrameFn frame, void *ctx) {
+static int settle(Harness* h, FrameFn frame, void* ctx) {
     for (int i = 1; i <= 50; i++) {
         if (step(h, nullptr, frame, ctx) != 0) return i;
     }
     return -1;
 }
 
-static dvui_RectPhysical wd_rect(const dvui_WidgetData *wd) { return dvui_widget_data_rect_scale(wd).r; }
+static dvui_RectPhysical wd_rect(const dvui_WidgetData* wd) { return dvui_widget_data_rect_scale(wd).r; }
 
 static dvui_Options rect_opts(dvui_Size min, dvui_Expand e) {
     return (dvui_Options){.min_size_content = DVUI_SOME(min), .expand = DVUI_SOME(e)};
@@ -120,9 +120,9 @@ typedef struct BoxCtx {
     dvui_RectPhysical a, b, c, box;
 } BoxCtx;
 
-static void frame_vbox(void *p) {
-    BoxCtx *ctx = p;
-    dvui_BoxWidget *b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){0});
+static void frame_vbox(void* p) {
+    BoxCtx* ctx = p;
+    dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){0});
     dvui_WidgetData a = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){30, 10}, DVUI_EXPAND_NONE));
     dvui_WidgetData bb = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){50, 20}, DVUI_EXPAND_NONE));
     dvui_WidgetData c = dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){10, 10})), .gravity_x = DVUI_SOME(1.0f)});
@@ -148,9 +148,9 @@ static void test_box_vertical(void) {
     harness_deinit(&h);
 }
 
-static void frame_hbox_expand(void *p) {
-    BoxCtx *ctx = p;
-    dvui_BoxWidget *b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
+static void frame_hbox_expand(void* p) {
+    BoxCtx* ctx = p;
+    dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
     dvui_WidgetData a = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){30, 10}, DVUI_EXPAND_HORIZONTAL));
     dvui_WidgetData bb = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){50, 20}, DVUI_EXPAND_NONE));
     dvui_WidgetData c = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){10, 10}, DVUI_EXPAND_BOTH));
@@ -175,9 +175,9 @@ static void test_box_horizontal_expand(void) {
     harness_deinit(&h);
 }
 
-static void frame_equal_space(void *p) {
-    BoxCtx *ctx = p;
-    dvui_BoxWidget *b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL, .equal_space = true}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
+static void frame_equal_space(void* p) {
+    BoxCtx* ctx = p;
+    dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL, .equal_space = true}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
     dvui_WidgetData a = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){30, 10}, DVUI_EXPAND_NONE));
     dvui_WidgetData bb = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){50, 20}, DVUI_EXPAND_HORIZONTAL));
     dvui_WidgetData c = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){10, 10}, DVUI_EXPAND_NONE));
@@ -210,8 +210,8 @@ typedef struct ButtonCtx {
     bool hovered;
 } ButtonCtx;
 
-static void frame_button(void *p) {
-    ButtonCtx *ctx = p;
+static void frame_button(void* p) {
+    ButtonCtx* ctx = p;
     dvui_ButtonWidget bw;
     dvui_button_widget_init(&bw, DVUI_SRC, (dvui_ButtonInitOptions){0}, (dvui_Options){0});
     dvui_button_widget_process_events(&bw);
@@ -226,17 +226,17 @@ static void frame_button(void *p) {
 // kliknutí na bod: pohyb myši, stisk a puštění v jednom snímku
 typedef struct ClickTest {
     dvui_Point p;
-    ButtonCtx *button;
+    ButtonCtx* button;
 } ClickTest;
 
-static void events_click(dvui_Window *win, void *p) {
-    ClickTest *c = p;
+static void events_click(dvui_Window* win, void* p) {
+    ClickTest* c = p;
     dvui_window_add_event_mouse_motion(win, c->p);
     dvui_window_add_event_mouse_button(win, DVUI_BUTTON_LEFT, DVUI_MOUSE_PRESS);
     dvui_window_add_event_mouse_button(win, DVUI_BUTTON_LEFT, DVUI_MOUSE_RELEASE);
 }
 
-static void frame_button_click(void *p) { frame_button(((ClickTest *)p)->button); }
+static void frame_button_click(void* p) { frame_button(((ClickTest*)p)->button); }
 
 static void test_button(void) {
     Harness h;
@@ -273,9 +273,9 @@ typedef struct ScrollCtx {
     float wheel;
 } ScrollCtx;
 
-static void frame_scroll(void *p) {
-    ScrollCtx *ctx = p;
-    dvui_ScrollAreaWidget *sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){.scroll_info = &ctx->si},
+static void frame_scroll(void* p) {
+    ScrollCtx* ctx = p;
+    dvui_ScrollAreaWidget* sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){.scroll_info = &ctx->si},
                                                  (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){100, 100})), .max_size_content = DVUI_SOME(((dvui_Size){100, 100}))});
     for (size_t i = 0; i < 10; i++) {
         dvui_WidgetData wd = dvui_spacer(DVUI_SRC, (dvui_Options){.id_extra = DVUI_SOME(i), .min_size_content = DVUI_SOME(((dvui_Size){50, 30}))});
@@ -286,8 +286,8 @@ static void frame_scroll(void *p) {
     dvui_scroll_area_widget_deinit(sa);
 }
 
-static void events_wheel(dvui_Window *win, void *p) {
-    ScrollCtx *ctx = p;
+static void events_wheel(dvui_Window* win, void* p) {
+    ScrollCtx* ctx = p;
     dvui_window_add_event_mouse_motion(win, (dvui_Point){20, 20});
     dvui_window_add_event_mouse_wheel(win, ctx->wheel, DVUI_VERTICAL);
 }
@@ -332,19 +332,19 @@ typedef struct GridCtx {
     float col_width[3];
 } GridCtx;
 
-static void frame_grid(void *p) {
-    GridCtx *ctx = p;
-    dvui_GridWidget *g = dvui_grid(DVUI_SRC, (dvui_GridInitOptions){0},
+static void frame_grid(void* p) {
+    GridCtx* ctx = p;
+    dvui_GridWidget* g = dvui_grid(DVUI_SRC, (dvui_GridInitOptions){0},
                                    (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){300, 200})), .border = DVUI_SOME((dvui_Rect){0})});
     for (size_t c = 0; c < 3; c++) {
-        dvui_GridCellWidget *hdr = dvui_grid_widget_col_header(g, (dvui_GridColHeaderInitOptions){.col = c}, (dvui_Options){0});
+        dvui_GridCellWidget* hdr = dvui_grid_widget_col_header(g, (dvui_GridColHeaderInitOptions){.col = c}, (dvui_Options){0});
         dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){10, 15}))});
         ctx->headers[c] = wd_rect(&hdr->wd);
         dvui_grid_cell_widget_deinit(hdr);
     }
     for (size_t r = 0; r < 3; r++) {
         for (size_t c = 0; c < 3; c++) {
-            dvui_GridCellWidget *cell = dvui_grid_widget_cell(g, (dvui_GridCellOptions){.col = c, .row = r}, (dvui_Options){0});
+            dvui_GridCellWidget* cell = dvui_grid_widget_cell(g, (dvui_GridCellOptions){.col = c, .row = r}, (dvui_Options){0});
             // šířka buňky závisí na sloupci i řádku; výška na řádku
             const dvui_Size s = {20.0f + 10.0f * (float)c + 5.0f * (float)r, 10.0f + 4.0f * (float)r};
             dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(s)});
@@ -387,18 +387,18 @@ typedef struct FwCtx {
     int drag_phase;
 } FwCtx;
 
-static void frame_fw(void *p) {
-    FwCtx *ctx = p;
+static void frame_fw(void* p) {
+    FwCtx* ctx = p;
     if (!ctx->open) return;
-    dvui_FloatingWindowWidget *fw = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.open_flag = &ctx->open}, (dvui_Options){0});
+    dvui_FloatingWindowWidget* fw = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.open_flag = &ctx->open}, (dvui_Options){0});
     dvui_WidgetData wd = dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){100, 50}))});
     ctx->content = wd_rect(&wd);
     ctx->win_rect = wd_rect(&fw->wd);
     dvui_floating_window_widget_deinit(fw);
 }
 
-static void events_drag(dvui_Window *win, void *p) {
-    FwCtx *ctx = p;
+static void events_drag(dvui_Window* win, void* p) {
+    FwCtx* ctx = p;
     switch (ctx->drag_phase) {
     case 0:
         dvui_window_add_event_mouse_motion(win, ctx->drag_from);
@@ -439,8 +439,8 @@ typedef struct TtCtx {
     dvui_Point mouse;
 } TtCtx;
 
-static void frame_tt(void *p) {
-    TtCtx *ctx = p;
+static void frame_tt(void* p) {
+    TtCtx* ctx = p;
     dvui_WidgetData wd = dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){50, 20}))});
     dvui_FloatingTooltipWidget tt;
     dvui_floating_tooltip_widget_init(&tt, DVUI_SRC, (dvui_FloatingTooltipInitOptions){.active_rect = wd_rect(&wd)}, (dvui_Options){0});
@@ -452,8 +452,8 @@ static void frame_tt(void *p) {
     dvui_floating_tooltip_widget_deinit(&tt);
 }
 
-static void events_move(dvui_Window *win, void *p) {
-    TtCtx *ctx = p;
+static void events_move(dvui_Window* win, void* p) {
+    TtCtx* ctx = p;
     dvui_window_add_event_mouse_motion(win, ctx->mouse);
 }
 

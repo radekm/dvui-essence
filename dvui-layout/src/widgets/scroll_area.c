@@ -9,7 +9,7 @@ dvui_Options dvui_scroll_area_widget_defaults = {
 };
 
 // DVUI: ScrollAreaWidget.init
-void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget *self, dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts) {
+void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts) {
     *self = (dvui_ScrollAreaWidget){0};
 
     dvui_box_widget_init(&self->hbox, src, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, dvui_options_override(dvui_scroll_area_widget_defaults, opts));
@@ -31,7 +31,7 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget *self, dvui_Src src, dvu
 
     dvui_Id focus_target = init_opts.focus_id;
     if (!focus_target) {
-        const dvui_Id *sid = DVUI_DATA_GET(hbox_id, "_scroll_id", dvui_Id);
+        const dvui_Id* sid = DVUI_DATA_GET(hbox_id, "_scroll_id", dvui_Id);
         if (sid) focus_target = *sid;
     }
 
@@ -42,7 +42,7 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget *self, dvui_Src src, dvu
     self->si->viewport.h = crect.h;
 
     // a upravíme podle odsazení z minulého snímku
-    const dvui_Size *inset = DVUI_DATA_GET(hbox_id, "_linsets", dvui_Size);
+    const dvui_Size* inset = DVUI_DATA_GET(hbox_id, "_linsets", dvui_Size);
     if (inset) {
         self->si->viewport.w -= inset->w;
         self->si->viewport.h -= inset->h;
@@ -130,15 +130,15 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget *self, dvui_Src src, dvu
     }
 }
 
-dvui_WidgetData *dvui_scroll_area_widget_data(dvui_ScrollAreaWidget *self) { return &self->hbox.wd; }
+dvui_WidgetData* dvui_scroll_area_widget_data(dvui_ScrollAreaWidget* self) { return &self->hbox.wd; }
 
 // ukládá se jen levé/horní odsazení – posuvníky jsou vpravo a dole
-void dvui_scroll_area_widget_set_container_rect(dvui_ScrollAreaWidget *self, dvui_Rect rect) {
+void dvui_scroll_area_widget_set_container_rect(dvui_ScrollAreaWidget* self, dvui_Rect rect) {
     DVUI_DATA_SET(self->hbox.wd.id, "_linsets", dvui_Size, ((dvui_Size){rect.x, rect.y}));
 }
 
 // DVUI: ScrollAreaWidget.deinit
-void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget *self) {
+void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget* self) {
     if (self->has_scroll) {
         DVUI_DATA_SET(self->hbox.wd.id, "_scroll_id", dvui_Id, self->scroll.wd.id);
         dvui_scroll_container_widget_deinit(&self->scroll);
@@ -158,8 +158,8 @@ void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget *self) {
     if (allocated) dvui_widget_free(self);
 }
 
-dvui_ScrollAreaWidget *dvui_scroll_area(dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts) {
-    dvui_ScrollAreaWidget *ret = dvui_widget_alloc(sizeof *ret);
+dvui_ScrollAreaWidget* dvui_scroll_area(dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts) {
+    dvui_ScrollAreaWidget* ret = dvui_widget_alloc(sizeof *ret);
     dvui_scroll_area_widget_init(ret, src, init_opts, opts);
     return ret;
 }

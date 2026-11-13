@@ -39,9 +39,9 @@ static void colored_rect(dvui_Src src, size_t id_extra, dvui_Size size, dvui_Col
                      });
 }
 
-static void top_bar(DemoState *st) {
+static void top_bar(DemoState* st) {
     // vodorovný box s tlačítky; každé má jinou barvu, kliknutím se mění
-    dvui_BoxWidget *row = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL},
+    dvui_BoxWidget* row = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL},
                                    (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .background = DVUI_SOME(true), .style = DVUI_SOME(DVUI_STYLE_WINDOW)});
     for (size_t i = 0; i < 4; i++) {
         const dvui_Color c = pal(i * 2 + st->clicks[i]);
@@ -68,7 +68,7 @@ static void top_bar(DemoState *st) {
     dvui_floating_tooltip_widget_init(&tt, DVUI_SRC, (dvui_FloatingTooltipInitOptions){.active_rect = active, .position = DVUI_TOOLTIP_VERTICAL},
                                       (dvui_Options){.padding = DVUI_SOME(dvui_rect_all(6))});
     if (dvui_floating_tooltip_widget_shown(&tt)) {
-        dvui_BoxWidget *tb = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){0});
+        dvui_BoxWidget* tb = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){0});
         for (size_t i = 0; i < 3; i++) colored_rect(DVUI_SRC, i, (dvui_Size){20, 20}, pal(i + 4), pal(i + 5), DVUI_EXPAND_NONE);
         dvui_box_widget_deinit(tb);
     }
@@ -77,7 +77,7 @@ static void top_bar(DemoState *st) {
     dvui_box_widget_deinit(row);
 
     // box s equal_space: všechny děti dostanou stejně místa
-    dvui_BoxWidget *eq = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL, .equal_space = true},
+    dvui_BoxWidget* eq = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL, .equal_space = true},
                                   (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
     for (size_t i = 0; i < 5; i++) colored_rect(DVUI_SRC, i, (dvui_Size){10 + 15 * (float)i, 14}, pal(i), DVUI_RGB(40, 40, 40), DVUI_EXPAND_NONE);
     dvui_box_widget_deinit(eq);
@@ -85,7 +85,7 @@ static void top_bar(DemoState *st) {
 
 static void left_scroll(void) {
     // svislá scroll oblast s obdélníky různé výšky; vodorovně se také scrolluje
-    dvui_ScrollAreaWidget *sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){.horizontal = DVUI_SOME(DVUI_SCROLL_AUTO)},
+    dvui_ScrollAreaWidget* sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){.horizontal = DVUI_SOME(DVUI_SCROLL_AUTO)},
                                                  (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_VERTICAL), .min_size_content = DVUI_SOME(((dvui_Size){180, 100})),
                                                                 .border = DVUI_SOME(dvui_rect_all(1)), .margin = DVUI_SOME(dvui_rect_all(4))});
     for (size_t i = 0; i < 25; i++) {
@@ -99,10 +99,10 @@ static void left_scroll(void) {
 static void right_grid(void) {
     // grid: sloupce a řádky se přizpůsobí obsahu během několika snímků
     const size_t cols = 5, rows = 40;
-    dvui_GridWidget *g = dvui_grid(DVUI_SRC, (dvui_GridInitOptions){.rows = DVUI_SOME(rows), .scroll_opts = {.horizontal = DVUI_SOME(DVUI_SCROLL_AUTO)}},
+    dvui_GridWidget* g = dvui_grid(DVUI_SRC, (dvui_GridInitOptions){.rows = DVUI_SOME(rows), .scroll_opts = {.horizontal = DVUI_SOME(DVUI_SCROLL_AUTO)}},
                                    (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH), .margin = DVUI_SOME(dvui_rect_all(4))});
     for (size_t c = 0; c < cols; c++) {
-        dvui_GridCellWidget *h = dvui_grid_widget_col_header(g, (dvui_GridColHeaderInitOptions){.col = c},
+        dvui_GridCellWidget* h = dvui_grid_widget_col_header(g, (dvui_GridColHeaderInitOptions){.col = c},
                                                              (dvui_Options){.background = DVUI_SOME(true), .style = DVUI_SOME(DVUI_STYLE_CONTROL),
                                                                             .border = DVUI_SOME(((dvui_Rect){0, 0, 1, 1}))});
         colored_rect(DVUI_SRC, c, (dvui_Size){30 + 10 * (float)c, 10}, pal(c), DVUI_RGB(30, 30, 30), DVUI_EXPAND_NONE);
@@ -116,7 +116,7 @@ static void right_grid(void) {
     for (size_t r = first; r < last; r++) {
         for (size_t c = 0; c < cols; c++) {
             const bool hov = has_hover && hovered.row == r;
-            dvui_GridCellWidget *cell = dvui_grid_widget_cell(g, (dvui_GridCellOptions){.col = c, .row = r},
+            dvui_GridCellWidget* cell = dvui_grid_widget_cell(g, (dvui_GridCellOptions){.col = c, .row = r},
                                                               (dvui_Options){.background = DVUI_SOME(hov || r % 2 == 1),
                                                                              .color_fill = DVUI_SOME(hov ? DVUI_RGB(0xcf, 0xe3, 0xfc) : DVUI_RGB(0xf4, 0xf4, 0xf4)),
                                                                              .expand = DVUI_SOME(c == cols - 1 ? DVUI_EXPAND_HORIZONTAL : DVUI_EXPAND_NONE)});
@@ -129,13 +129,13 @@ static void right_grid(void) {
     dvui_grid_widget_deinit(g);
 }
 
-static void floating_window(DemoState *st) {
+static void floating_window(DemoState* st) {
     if (!st->show_window) return;
-    dvui_FloatingWindowWidget *fw = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.open_flag = &st->show_window},
+    dvui_FloatingWindowWidget* fw = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.open_flag = &st->show_window},
                                                          (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){260, 200}))});
     dvui_floating_window_widget_drag_area_set(fw, dvui_window_header((dvui_WindowHeaderOptions){.title_size = {120, 12}, .open_flag = &st->show_window}));
 
-    dvui_BoxWidget *row = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
+    dvui_BoxWidget* row = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
     if (dvui_button(DVUI_SRC, (dvui_Size){50, 12}, (dvui_ButtonInitOptions){0}, (dvui_Options){.color_fill = DVUI_SOME(pal(st->window_clicks))})) {
         st->window_clicks++;
     }
@@ -146,7 +146,7 @@ static void floating_window(DemoState *st) {
 
     // vnořená scroll oblast s roztaženými obdélníky (expand horizontal);
     // max_size_content omezí její výšku, jinak by okno narostlo podle obsahu
-    dvui_ScrollAreaWidget *sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){0},
+    dvui_ScrollAreaWidget* sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){0},
                                                  (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH), .max_size_content = DVUI_SOME(((dvui_Size){DVUI_MAX_FLOAT_SAFE, 150}))});
     for (size_t i = 0; i < 12; i++) colored_rect(DVUI_SRC, i, (dvui_Size){40, 18}, pal(i + st->window_clicks), DVUI_RGB(20, 20, 20), DVUI_EXPAND_HORIZONTAL);
     dvui_scroll_area_widget_deinit(sa);
@@ -155,7 +155,7 @@ static void floating_window(DemoState *st) {
 
     if (st->show_modal) {
         // modální okno nad plovoucím oknem
-        dvui_FloatingWindowWidget *m = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.modal = true, .open_flag = &st->show_modal}, (dvui_Options){0});
+        dvui_FloatingWindowWidget* m = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.modal = true, .open_flag = &st->show_modal}, (dvui_Options){0});
         dvui_floating_window_widget_drag_area_set(m, dvui_window_header((dvui_WindowHeaderOptions){.title_size = {80, 12}, .open_flag = &st->show_modal}));
         colored_rect(DVUI_SRC, 0, (dvui_Size){160, 60}, pal(6), pal(7), DVUI_EXPAND_BOTH);
         if (dvui_button(DVUI_SRC, (dvui_Size){40, 12}, (dvui_ButtonInitOptions){0}, (dvui_Options){.gravity_x = DVUI_SOME(0.5f)})) st->show_modal = false;
@@ -163,8 +163,8 @@ static void floating_window(DemoState *st) {
     }
 }
 
-static void frame(DemoState *st) {
-    dvui_BoxWidget *main_box = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
+static void frame(DemoState* st) {
+    dvui_BoxWidget* main_box = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
 
     top_bar(st);
 
@@ -172,7 +172,7 @@ static void frame(DemoState *st) {
     // zabalí ke spodnímu okraji. Prostřední část pak dostane zbytek místa.
     // (Scroll oblast hlásí min. výšku celého obsahu, takže kdyby byla lišta
     // až za ní, nezbylo by na ni místo – stejně jako v DVUI.)
-    dvui_BoxWidget *bottom = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL},
+    dvui_BoxWidget* bottom = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL},
                                       (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .gravity_y = DVUI_SOME(1.0f)});
     // roztažený obdélník mezi dvěma pevnými
     colored_rect(DVUI_SRC, 0, (dvui_Size){40, 16}, pal(0), DVUI_RGB(0, 0, 0), DVUI_EXPAND_NONE);
@@ -180,7 +180,7 @@ static void frame(DemoState *st) {
     colored_rect(DVUI_SRC, 2, (dvui_Size){40, 16}, pal(5), DVUI_RGB(0, 0, 0), DVUI_EXPAND_NONE);
     dvui_box_widget_deinit(bottom);
 
-    dvui_BoxWidget *middle = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
+    dvui_BoxWidget* middle = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
     left_scroll();
     right_grid();
     dvui_box_widget_deinit(middle);
@@ -190,13 +190,13 @@ static void frame(DemoState *st) {
     floating_window(st);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     long max_frames = -1;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--frames") == 0 && i + 1 < argc) max_frames = strtol(argv[++i], nullptr, 10);
     }
 
-    dvui_Sdl3GpuBackend *backend = dvui_sdl3gpu_create((dvui_Sdl3GpuInitOptions){
+    dvui_Sdl3GpuBackend* backend = dvui_sdl3gpu_create((dvui_Sdl3GpuInitOptions){
         .title = "dvui-layout demo",
         .size = {900, 600},
         .min_size = DVUI_SOME(((dvui_Size){250, 350})),
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    dvui_Window *win = dvui_window_create(dvui_sdl3gpu_backend(backend));
+    dvui_Window* win = dvui_window_create(dvui_sdl3gpu_backend(backend));
     bool open = true;
     dvui_window_open_flag_set(win, &open);
 

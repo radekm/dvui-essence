@@ -38,43 +38,43 @@ typedef struct DrawCall {
 } DrawCall;
 
 struct dvui_Sdl3GpuBackend {
-    SDL_Window *window;
-    SDL_GPUDevice *device;
+    SDL_Window* window;
+    SDL_GPUDevice* device;
     SDL_GPUShaderFormat shader_format;
-    const char *shader_entrypoint;
-    SDL_GPUGraphicsPipeline *pipeline;
-    SDL_GPUSampler *sampler;
-    SDL_GPUTexture *white_texture;
+    const char* shader_entrypoint;
+    SDL_GPUGraphicsPipeline* pipeline;
+    SDL_GPUSampler* sampler;
+    SDL_GPUTexture* white_texture;
     dvui_Color clear_color;
 
-    SDL_GPUCommandBuffer *cmd;
-    SDL_GPUTexture *swapchain_texture;
+    SDL_GPUCommandBuffer* cmd;
+    SDL_GPUTexture* swapchain_texture;
 
     // data snímku na CPU
-    GpuVertex *vertices;
+    GpuVertex* vertices;
     size_t vertices_len, vertices_cap;
-    uint32_t *indices;
+    uint32_t* indices;
     size_t indices_len, indices_cap;
-    DrawCall *draws;
+    DrawCall* draws;
     size_t draws_len, draws_cap;
 
     // GPU buffery (rostou podle potřeby)
-    SDL_GPUBuffer *vertex_buffer;
+    SDL_GPUBuffer* vertex_buffer;
     uint32_t vertex_buffer_size;
-    SDL_GPUBuffer *index_buffer;
+    SDL_GPUBuffer* index_buffer;
     uint32_t index_buffer_size;
-    SDL_GPUTransferBuffer *transfer_buffer;
+    SDL_GPUTransferBuffer* transfer_buffer;
     uint32_t transfer_buffer_size;
 
     dvui_SizePhysical last_pixel_size;
     dvui_SizeNatural last_window_size;
 
-    SDL_Cursor *cursors[DVUI_CURSOR_ARROW_W_E + 1];
+    SDL_Cursor* cursors[DVUI_CURSOR_ARROW_W_E + 1];
     dvui_Cursor cursor_last;
     bool cursor_set_once;
 };
 
-static void *grow(void *items, size_t *cap, size_t elem, size_t needed) {
+static void* grow(void* items, size_t* cap, size_t elem, size_t needed) {
     if (needed <= *cap) return items;
     size_t ncap = *cap ? *cap * 2 : 256;
     while (ncap < needed) ncap *= 2;
@@ -85,7 +85,7 @@ static void *grow(void *items, size_t *cap, size_t elem, size_t needed) {
 }
 
 // DVUI: SDLBackend.detectShaderFormat
-static void detect_shader_format(dvui_Sdl3GpuBackend *b) {
+static void detect_shader_format(dvui_Sdl3GpuBackend* b) {
     const SDL_GPUShaderFormat formats = SDL_GetGPUShaderFormats(b->device);
     if (formats & SDL_GPU_SHADERFORMAT_SPIRV) {
         b->shader_format = SDL_GPU_SHADERFORMAT_SPIRV;
@@ -102,7 +102,7 @@ static void detect_shader_format(dvui_Sdl3GpuBackend *b) {
 }
 
 // DVUI: SDLBackend.loadShader
-static SDL_GPUShader *load_shader(dvui_Sdl3GpuBackend *b, const unsigned char *code, size_t size, SDL_GPUShaderStage stage, uint32_t num_samplers) {
+static SDL_GPUShader* load_shader(dvui_Sdl3GpuBackend* b, const unsigned char* code, size_t size, SDL_GPUShaderStage stage, uint32_t num_samplers) {
     const SDL_GPUShaderCreateInfo info = {
         .code_size = size,
         .code = code,
@@ -111,14 +111,14 @@ static SDL_GPUShader *load_shader(dvui_Sdl3GpuBackend *b, const unsigned char *c
         .stage = stage,
         .num_samplers = num_samplers,
     };
-    SDL_GPUShader *shader = SDL_CreateGPUShader(b->device, &info);
+    SDL_GPUShader* shader = SDL_CreateGPUShader(b->device, &info);
     if (!shader) SDL_Log("dvui: failed to create shader: %s", SDL_GetError());
     return shader;
 }
 
 // DVUI: SDLBackend.createPipeline
-static bool create_pipeline(dvui_Sdl3GpuBackend *b) {
-    const unsigned char *vcode = nullptr, *fcode = nullptr;
+static bool create_pipeline(dvui_Sdl3GpuBackend* b) {
+    const unsigned char* vcode = nullptr, *fcode = nullptr;
     size_t vsize = 0, fsize = 0;
     switch (b->shader_format) {
     case SDL_GPU_SHADERFORMAT_SPIRV:
@@ -137,8 +137,8 @@ static bool create_pipeline(dvui_Sdl3GpuBackend *b) {
     }
 
     // vertex shader: bez samplerů; fragment shader: 1 sampler
-    SDL_GPUShader *vs = load_shader(b, vcode, vsize, SDL_GPU_SHADERSTAGE_VERTEX, 0);
-    SDL_GPUShader *fs = load_shader(b, fcode, fsize, SDL_GPU_SHADERSTAGE_FRAGMENT, 1);
+    SDL_GPUShader* vs = load_shader(b, vcode, vsize, SDL_GPU_SHADERSTAGE_VERTEX, 0);
+    SDL_GPUShader* fs = load_shader(b, fcode, fsize, SDL_GPU_SHADERSTAGE_FRAGMENT, 1);
     if (!vs || !fs) {
         if (vs) SDL_ReleaseGPUShader(b->device, vs);
         if (fs) SDL_ReleaseGPUShader(b->device, fs);
@@ -198,7 +198,7 @@ static bool create_pipeline(dvui_Sdl3GpuBackend *b) {
 
 // DVUI: SDLBackend.createWhiteTexture – shader vždy vzorkuje texturu,
 // obdélníky používají bílou 1×1.
-static bool create_white_texture(dvui_Sdl3GpuBackend *b) {
+static bool create_white_texture(dvui_Sdl3GpuBackend* b) {
     b->white_texture = SDL_CreateGPUTexture(b->device, &(SDL_GPUTextureCreateInfo){
                                                            .type = SDL_GPU_TEXTURETYPE_2D,
                                                            .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
@@ -210,18 +210,18 @@ static bool create_white_texture(dvui_Sdl3GpuBackend *b) {
                                                        });
     if (!b->white_texture) return false;
 
-    SDL_GPUTransferBuffer *tb = SDL_CreateGPUTransferBuffer(b->device, &(SDL_GPUTransferBufferCreateInfo){.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = 4});
+    SDL_GPUTransferBuffer* tb = SDL_CreateGPUTransferBuffer(b->device, &(SDL_GPUTransferBufferCreateInfo){.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = 4});
     if (!tb) return false;
-    uint8_t *mapped = SDL_MapGPUTransferBuffer(b->device, tb, false);
+    uint8_t* mapped = SDL_MapGPUTransferBuffer(b->device, tb, false);
     memset(mapped, 255, 4);
     SDL_UnmapGPUTransferBuffer(b->device, tb);
 
-    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(b->device);
-    SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
+    SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(b->device);
+    SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(cmd);
     SDL_UploadToGPUTexture(copy, &(SDL_GPUTextureTransferInfo){.transfer_buffer = tb, .pixels_per_row = 1, .rows_per_layer = 1},
                            &(SDL_GPUTextureRegion){.texture = b->white_texture, .w = 1, .h = 1, .d = 1}, false);
     SDL_EndGPUCopyPass(copy);
-    SDL_GPUFence *fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
+    SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
     if (fence) {
         SDL_WaitForGPUFences(b->device, true, &fence, 1);
         SDL_ReleaseGPUFence(b->device, fence);
@@ -230,11 +230,11 @@ static bool create_white_texture(dvui_Sdl3GpuBackend *b) {
     return true;
 }
 
-dvui_Sdl3GpuBackend *dvui_sdl3gpu_create(dvui_Sdl3GpuInitOptions options) {
+dvui_Sdl3GpuBackend* dvui_sdl3gpu_create(dvui_Sdl3GpuInitOptions options) {
     SDL_SetHint(SDL_HINT_MAC_SCROLL_MOMENTUM, "1");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) return nullptr;
 
-    dvui_Sdl3GpuBackend *b = calloc(1, sizeof *b);
+    dvui_Sdl3GpuBackend* b = calloc(1, sizeof *b);
     b->clear_color = options.clear_color.has ? options.clear_color.v : DVUI_RGB(0xf0, 0xf0, 0xf0);
 
     const SDL_WindowFlags flags = SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | (options.hidden ? SDL_WINDOW_HIDDEN : 0);
@@ -279,7 +279,7 @@ fail:
     return nullptr;
 }
 
-void dvui_sdl3gpu_destroy(dvui_Sdl3GpuBackend *b) {
+void dvui_sdl3gpu_destroy(dvui_Sdl3GpuBackend* b) {
     if (!b) return;
     if (b->device) {
         SDL_WaitForGPUIdle(b->device);
@@ -303,16 +303,16 @@ void dvui_sdl3gpu_destroy(dvui_Sdl3GpuBackend *b) {
     SDL_Quit();
 }
 
-SDL_Window *dvui_sdl3gpu_window(dvui_Sdl3GpuBackend *b) { return b->window; }
-SDL_GPUDevice *dvui_sdl3gpu_device(dvui_Sdl3GpuBackend *b) { return b->device; }
+SDL_Window* dvui_sdl3gpu_window(dvui_Sdl3GpuBackend* b) { return b->window; }
+SDL_GPUDevice* dvui_sdl3gpu_device(dvui_Sdl3GpuBackend* b) { return b->device; }
 
 // ---------------------------------------------------------------------------
 // Rozhraní dvui_Backend
 // ---------------------------------------------------------------------------
 
 // DVUI: SDLBackend.begin – command buffer a swapchain textura pro snímek
-static void be_begin(void *ctx) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static void be_begin(void* ctx) {
+    dvui_Sdl3GpuBackend* b = ctx;
     b->vertices_len = 0;
     b->indices_len = 0;
     b->draws_len = 0;
@@ -327,7 +327,7 @@ static void be_begin(void *ctx) {
     }
 }
 
-static bool ensure_buffer(dvui_Sdl3GpuBackend *b, SDL_GPUBuffer **buf, uint32_t *size, uint32_t needed, SDL_GPUBufferUsageFlags usage) {
+static bool ensure_buffer(dvui_Sdl3GpuBackend* b, SDL_GPUBuffer** buf, uint32_t* size, uint32_t needed, SDL_GPUBufferUsageFlags usage) {
     if (*buf && *size >= needed) return true;
     uint32_t nsize = *size ? *size : 64 * 1024;
     while (nsize < needed) nsize *= 2;
@@ -338,8 +338,8 @@ static bool ensure_buffer(dvui_Sdl3GpuBackend *b, SDL_GPUBuffer **buf, uint32_t 
 }
 
 // DVUI: SDLBackend.finishRenderingCurrentTarget – nahraje vrcholy a vykreslí
-static void be_end(void *ctx) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static void be_end(void* ctx) {
+    dvui_Sdl3GpuBackend* b = ctx;
     if (!b->cmd || !b->swapchain_texture) return;
 
     const uint32_t vbytes = (uint32_t)(b->vertices_len * sizeof(GpuVertex));
@@ -358,13 +358,13 @@ static void be_end(void *ctx) {
             SDL_Log("dvui: failed to create GPU buffers: %s", SDL_GetError());
             b->draws_len = 0;
         } else {
-            uint8_t *mapped = SDL_MapGPUTransferBuffer(b->device, b->transfer_buffer, true);
+            uint8_t* mapped = SDL_MapGPUTransferBuffer(b->device, b->transfer_buffer, true);
             memcpy(mapped, b->vertices, vbytes);
             memcpy(mapped + vbytes, b->indices, ibytes);
             SDL_UnmapGPUTransferBuffer(b->device, b->transfer_buffer);
 
             // všechna nahrání musí proběhnout před render passem
-            SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(b->cmd);
+            SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(b->cmd);
             SDL_UploadToGPUBuffer(copy, &(SDL_GPUTransferBufferLocation){.transfer_buffer = b->transfer_buffer, .offset = 0},
                                   &(SDL_GPUBufferRegion){.buffer = b->vertex_buffer, .offset = 0, .size = vbytes}, true);
             SDL_UploadToGPUBuffer(copy, &(SDL_GPUTransferBufferLocation){.transfer_buffer = b->transfer_buffer, .offset = vbytes},
@@ -379,7 +379,7 @@ static void be_end(void *ctx) {
         .load_op = SDL_GPU_LOADOP_CLEAR,
         .store_op = SDL_GPU_STOREOP_STORE,
     };
-    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(b->cmd, &color_target, 1, nullptr);
+    SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(b->cmd, &color_target, 1, nullptr);
     if (!pass) {
         SDL_Log("dvui: failed to begin GPU render pass: %s", SDL_GetError());
         return;
@@ -393,7 +393,7 @@ static void be_end(void *ctx) {
 
         const SDL_Rect full = {0, 0, (int)b->last_pixel_size.w, (int)b->last_pixel_size.h};
         for (size_t i = 0; i < b->draws_len; i++) {
-            const DrawCall *d = &b->draws[i];
+            const DrawCall* d = &b->draws[i];
             SDL_SetGPUScissor(pass, d->has_scissor ? &d->scissor : &full);
             SDL_DrawGPUIndexedPrimitives(pass, d->index_count, 1, d->index_start, 0, 0);
         }
@@ -401,36 +401,36 @@ static void be_end(void *ctx) {
     SDL_EndGPURenderPass(pass);
 }
 
-static dvui_SizePhysical be_pixel_size(void *ctx) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static dvui_SizePhysical be_pixel_size(void* ctx) {
+    dvui_Sdl3GpuBackend* b = ctx;
     int w, h;
     if (SDL_GetWindowSizeInPixels(b->window, &w, &h)) b->last_pixel_size = (dvui_SizePhysical){(float)w, (float)h};
     return b->last_pixel_size;
 }
 
-static dvui_SizeNatural be_window_size(void *ctx) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static dvui_SizeNatural be_window_size(void* ctx) {
+    dvui_Sdl3GpuBackend* b = ctx;
     int w, h;
     if (SDL_GetWindowSize(b->window, &w, &h)) b->last_window_size = (dvui_SizeNatural){(float)w, (float)h};
     return b->last_window_size;
 }
 
-static float be_content_scale(void *ctx) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static float be_content_scale(void* ctx) {
+    dvui_Sdl3GpuBackend* b = ctx;
     const float s = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(b->window));
     return s > 0 ? s : 1.0f;
 }
 
 // DVUI: SDLBackend.drawClippedTriangles
-static void be_draw(void *ctx, const dvui_Vertex *vtx, size_t vtx_count, const uint32_t *idx, size_t idx_count, const dvui_RectPhysical *clip) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static void be_draw(void* ctx, const dvui_Vertex* vtx, size_t vtx_count, const uint32_t* idx, size_t idx_count, const dvui_RectPhysical* clip) {
+    dvui_Sdl3GpuBackend* b = ctx;
     const float w = b->last_pixel_size.w > 0 ? b->last_pixel_size.w : 1;
     const float h = b->last_pixel_size.h > 0 ? b->last_pixel_size.h : 1;
 
     const uint32_t base = (uint32_t)b->vertices_len;
     b->vertices = grow(b->vertices, &b->vertices_cap, sizeof(GpuVertex), b->vertices_len + vtx_count);
     for (size_t i = 0; i < vtx_count; i++) {
-        const dvui_Vertex *v = &vtx[i];
+        const dvui_Vertex* v = &vtx[i];
         b->vertices[b->vertices_len++] = (GpuVertex){
             .position = {v->pos.x / w * 2 - 1.0f, -(v->pos.y / h * 2 - 1.0f), 0, 1},
             .color = {v->col.r / 255.0f, v->col.g / 255.0f, v->col.b / 255.0f, v->col.a / 255.0f},
@@ -449,7 +449,7 @@ static void be_draw(void *ctx, const dvui_Vertex *vtx, size_t vtx_count, const u
     }
     // sloučíme s předchozím voláním, pokud má stejný ořez
     if (b->draws_len > 0) {
-        DrawCall *prev = &b->draws[b->draws_len - 1];
+        DrawCall* prev = &b->draws[b->draws_len - 1];
         if (prev->has_scissor == d.has_scissor && prev->index_start + prev->index_count == start &&
             (!d.has_scissor || memcmp(&prev->scissor, &d.scissor, sizeof d.scissor) == 0)) {
             prev->index_count += d.index_count;
@@ -461,8 +461,8 @@ static void be_draw(void *ctx, const dvui_Vertex *vtx, size_t vtx_count, const u
 }
 
 // DVUI: SDLBackend.setCursor
-static void be_set_cursor(void *ctx, dvui_Cursor cursor) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static void be_set_cursor(void* ctx, dvui_Cursor cursor) {
+    dvui_Sdl3GpuBackend* b = ctx;
     if (b->cursor_set_once && cursor == b->cursor_last) return;
     b->cursor_set_once = true;
     b->cursor_last = cursor;
@@ -481,8 +481,8 @@ static void be_set_cursor(void *ctx, dvui_Cursor cursor) {
 }
 
 // DVUI: SDLBackend.renderPresent
-static void be_render_present(void *ctx) {
-    dvui_Sdl3GpuBackend *b = ctx;
+static void be_render_present(void* ctx) {
+    dvui_Sdl3GpuBackend* b = ctx;
     if (b->cmd) {
         if (!SDL_SubmitGPUCommandBuffer(b->cmd)) SDL_Log("dvui: submit GPU command buffer failed: %s", SDL_GetError());
     }
@@ -490,12 +490,12 @@ static void be_render_present(void *ctx) {
     b->swapchain_texture = nullptr;
 }
 
-static int64_t be_nano_time(void *ctx) {
+static int64_t be_nano_time(void* ctx) {
     (void)ctx;
     return (int64_t)SDL_GetTicksNS();
 }
 
-dvui_Backend dvui_sdl3gpu_backend(dvui_Sdl3GpuBackend *b) {
+dvui_Backend dvui_sdl3gpu_backend(dvui_Sdl3GpuBackend* b) {
     return (dvui_Backend){
         .ctx = b,
         .begin = be_begin,
@@ -557,7 +557,7 @@ static dvui_Key sdl_keysym_to_dvui(SDL_Keycode key) {
     }
 }
 
-bool dvui_sdl3gpu_add_event(dvui_Sdl3GpuBackend *b, dvui_Window *win, const SDL_Event *event) {
+bool dvui_sdl3gpu_add_event(dvui_Sdl3GpuBackend* b, dvui_Window* win, const SDL_Event* event) {
     switch (event->type) {
     case SDL_EVENT_KEY_DOWN:
         return dvui_window_add_event_key(win, sdl_keysym_to_dvui(event->key.key), event->key.repeat ? DVUI_KEY_ACTION_REPEAT : DVUI_KEY_ACTION_DOWN,
@@ -585,7 +585,7 @@ bool dvui_sdl3gpu_add_event(dvui_Sdl3GpuBackend *b, dvui_Window *win, const SDL_
     }
 }
 
-bool dvui_sdl3gpu_add_all_events(dvui_Sdl3GpuBackend *b, dvui_Window *win) {
+bool dvui_sdl3gpu_add_all_events(dvui_Sdl3GpuBackend* b, dvui_Window* win) {
     // modifikátory nastavíme předem, aby je měly i události myši
     dvui_window_modifiers_set(win, sdl_keymod_to_dvui(SDL_GetModState()));
     bool quit = false;
@@ -597,7 +597,7 @@ bool dvui_sdl3gpu_add_all_events(dvui_Sdl3GpuBackend *b, dvui_Window *win) {
     return quit;
 }
 
-void dvui_sdl3gpu_wait_event_timeout(dvui_Sdl3GpuBackend *b, int64_t micros) {
+void dvui_sdl3gpu_wait_event_timeout(dvui_Sdl3GpuBackend* b, int64_t micros) {
     (void)b;
     if (micros == 0) return;
     if (micros < 0) {
