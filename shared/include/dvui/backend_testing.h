@@ -1,15 +1,15 @@
-// Testovací backend bez GPU – zaznamenává vykreslené obdélníky.
+// Testovací backend bez GPU – zaznamenává vykreslené obdélníky (sdílený, viz shared/README.md).
 // DVUI: src/backends/testing.zig
 #pragma once
 
-#include "dvui.h"
+#include "base.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct dvui_TestingDraw {
-    // Ohraničení trojúhelníků (u dvui-layout vždy obdélník).
+    // Ohraničení trojúhelníků (projekty kreslí jen obdélníky).
     dvui_RectPhysical rect;
     dvui_Color color;
     bool clipped;

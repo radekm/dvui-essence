@@ -1,6 +1,7 @@
-// Pomocné datové struktury: aréna snímku, hash mapa, seznamy příkazů.
+// Aréna, hash mapa a datové úložiště (sdílené všemi projekty).
 // DVUI: Window.arena, tracking_hash_map.zig, Data.zig
-#include "internal.h"
+#include "dvui/data.h"
+#include "dvui/util.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,18 +48,6 @@ void dvui_arena_free_all(dvui_Arena* a) {
         c = n;
     }
     a->head = nullptr;
-}
-
-void* dvui_frame_alloc(size_t size) { return dvui_arena_alloc(&dvui_current_window()->arena, size); }
-
-void* dvui_frame_grow(void* items, size_t* cap, size_t elem_size, size_t needed) {
-    if (needed <= *cap) return items;
-    size_t ncap = *cap ? *cap * 2 : 8;
-    while (ncap < needed) ncap *= 2;
-    void* n = dvui_frame_alloc(ncap * elem_size);
-    if (items && *cap) memcpy(n, items, *cap * elem_size);
-    *cap = ncap;
-    return n;
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +117,19 @@ void dvui_map_remove(dvui_Map* m, uint64_t key) {
     m->tombstones++;
 }
 
+// DVUI: tracking_hash_map.zig – TrackingAutoHashMap.reset
+void dvui_map_reset(dvui_Map* m) {
+    for (size_t i = 0; i < m->cap; i++) {
+        dvui_MapEntry* e = &m->entries[i];
+        if (e->state != 1) continue;
+        if (e->used) {
+            e->used = false;
+        } else {
+            dvui_map_remove(m, e->key);
+        }
+    }
+}
+
 void dvui_map_free(dvui_Map* m) {
     for (size_t i = 0; i < m->cap; i++) {
         if (m->entries[i].state == 1) free(m->entries[i].ptr);
@@ -137,18 +139,95 @@ void dvui_map_free(dvui_Map* m) {
 }
 
 // ---------------------------------------------------------------------------
-// Seznam renderovacích příkazů (v aréně snímku)
+// Datové úložiště (DVUI: Data.zig)
 // ---------------------------------------------------------------------------
 
-void dvui_render_cmd_list_append(dvui_RenderCmdList* list, dvui_RenderCommand cmd) {
-    list->items = dvui_frame_grow(list->items, &list->cap, sizeof(dvui_RenderCommand), list->len + 1);
-    list->items[list->len++] = cmd;
+static void data_trash(dvui_DataStore* ds, void* ptr) {
+    if (!ptr) return;
+    if (ds->trash_len == ds->trash_cap) {
+        ds->trash_cap = ds->trash_cap ? ds->trash_cap * 2 : 16;
+        ds->trash = realloc(ds->trash, ds->trash_cap * sizeof(void*));
+        if (!ds->trash) {
+            DVUI_LOG_ERR("out of memory");
+            abort();
+        }
+    }
+    ds->trash[ds->trash_len++] = ptr;
 }
 
-void dvui_render_cmd_list_insert_slice(dvui_RenderCmdList* list, size_t at, const dvui_RenderCommand* items, size_t n) {
-    if (n == 0) return;
-    list->items = dvui_frame_grow(list->items, &list->cap, sizeof(dvui_RenderCommand), list->len + n);
-    memmove(list->items + at + n, list->items + at, (list->len - at) * sizeof(dvui_RenderCommand));
-    memcpy(list->items + at, items, n * sizeof(dvui_RenderCommand));
-    list->len += n;
+// DVUI: Data.zig – set (getOrPut s replace_existing)
+void dvui_data_store_set(dvui_DataStore* ds, uint64_t key, const void* value, size_t size) {
+    dvui_MapEntry* e = dvui_map_get_or_put(&ds->storage, key);
+    e->used = true;
+    if (e->ptr && e->size == size) {
+        // stejná velikost: přepíšeme na místě, ukazatele zůstanou platné
+        if (e->ptr != value && size) memmove(e->ptr, value, size);
+        return;
+    }
+    // jiná velikost: starý blob uvolníme až na začátku dalšího snímku
+    data_trash(ds, e->ptr);
+    e->ptr = malloc(size ? size : 1);
+    if (!e->ptr) {
+        DVUI_LOG_ERR("out of memory");
+        abort();
+    }
+    e->size = size;
+    if (size) memcpy(e->ptr, value, size);
+}
+
+// DVUI: Data.zig – getPtr
+void* dvui_data_store_get(dvui_DataStore* ds, uint64_t key, size_t size, const char* name) {
+    dvui_MapEntry* e = dvui_map_get(&ds->storage, key);
+    if (!e) return nullptr;
+    e->used = true;
+    if (e->size != size) {
+        DVUI_LOG_ERR("dataGet key \"%s\" has size %zu, asked for %zu", name ? name : "?", e->size, size);
+        return nullptr;
+    }
+    return e->ptr;
+}
+
+// DVUI: Data.zig – getPtrDefault
+void* dvui_data_store_get_ptr_default(dvui_DataStore* ds, uint64_t key, size_t size, const void* def, const char* name) {
+    void* p = dvui_data_store_get(ds, key, size, name);
+    if (p) return p;
+    dvui_data_store_set(ds, key, def, size);
+    return dvui_data_store_get(ds, key, size, name);
+}
+
+// DVUI: Data.zig – getSlice
+void* dvui_data_store_get_slice(dvui_DataStore* ds, uint64_t key, size_t* size) {
+    dvui_MapEntry* e = dvui_map_get(&ds->storage, key);
+    if (!e) {
+        *size = 0;
+        return nullptr;
+    }
+    e->used = true;
+    *size = e->size;
+    return e->ptr;
+}
+
+// DVUI: Data.zig – remove
+void dvui_data_store_remove(dvui_DataStore* ds, uint64_t key) {
+    dvui_MapEntry* e = dvui_map_get(&ds->storage, key);
+    if (!e) return;
+    // blob může někdo ještě tento snímek používat – jen do koše
+    data_trash(ds, e->ptr);
+    e->ptr = nullptr;
+    dvui_map_remove(&ds->storage, key);
+}
+
+// DVUI: Data.zig – reset
+void dvui_data_store_reset(dvui_DataStore* ds) {
+    dvui_map_reset(&ds->storage);
+    for (size_t i = 0; i < ds->trash_len; i++) free(ds->trash[i]);
+    ds->trash_len = 0;
+}
+
+// DVUI: Data.zig – deinit
+void dvui_data_store_deinit(dvui_DataStore* ds) {
+    dvui_map_free(&ds->storage);
+    for (size_t i = 0; i < ds->trash_len; i++) free(ds->trash[i]);
+    free(ds->trash);
+    *ds = (dvui_DataStore){0};
 }

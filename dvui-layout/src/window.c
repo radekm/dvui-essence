@@ -28,37 +28,6 @@ dvui_Window* dvui_current_window(void) {
 }
 
 // ---------------------------------------------------------------------------
-// Id (DVUI: dvui.zig – Id.extendId, Id.update; FNV-1a 64)
-// ---------------------------------------------------------------------------
-
-static const uint64_t fnv_offset = 0xcbf29ce484222325ULL;
-static const uint64_t fnv_prime = 0x100000001b3ULL;
-
-static uint64_t fnv_update(uint64_t h, const void* data, size_t len) {
-    const uint8_t* p = data;
-    for (size_t i = 0; i < len; i++) {
-        h ^= p[i];
-        h *= fnv_prime;
-    }
-    return h;
-}
-
-dvui_Id dvui_id_extend(dvui_Id start, dvui_Src src, size_t id_extra) {
-    uint64_t h = start ? start : fnv_offset;
-    // DVUI hashuje ukazatel na jméno souboru, řádek a sloupec; zde adresu
-    // literálu, který je pro každé místo ve zdrojáku jiný (viz DVUI_SRC).
-    const uintptr_t anchor = (uintptr_t)src.anchor;
-    h = fnv_update(h, &anchor, sizeof anchor);
-    const uint64_t extra = id_extra;
-    h = fnv_update(h, &extra, sizeof extra);
-    return h;
-}
-
-dvui_Id dvui_id_update(dvui_Id id, const char* name) {
-    return fnv_update(id, name, strlen(name));
-}
-
-// ---------------------------------------------------------------------------
 // Widget (DVUI: Widget.zig)
 // ---------------------------------------------------------------------------
 
@@ -321,9 +290,7 @@ dvui_Window* dvui_window_create(dvui_Backend backend) {
 void dvui_window_destroy(dvui_Window* win) {
     if (!win) return;
     dvui_map_free(&win->min_sizes);
-    dvui_map_free(&win->data_store);
-    for (size_t i = 0; i < win->data_trash_len; i++) free(win->data_trash[i]);
-    free(win->data_trash);
+    dvui_data_store_deinit(&win->data_store);
     for (size_t i = 0; i < win->widget_allocs_len; i++) free(win->widget_allocs[i]);
     free(win->widget_allocs);
     free(win->subwindows.stack);
@@ -340,102 +307,24 @@ void dvui_window_open_flag_set(dvui_Window* win, bool* open_flag) { win->open_fl
 
 static dvui_Window* win_or_current(dvui_Window* win) { return win ? win : dvui_current_window(); }
 
-static void data_trash(dvui_Window* win, void* ptr) {
-    if (!ptr) return;
-    if (win->data_trash_len == win->data_trash_cap) {
-        win->data_trash_cap = win->data_trash_cap ? win->data_trash_cap * 2 : 16;
-        win->data_trash = realloc(win->data_trash, win->data_trash_cap * sizeof(void*));
-    }
-    win->data_trash[win->data_trash_len++] = ptr;
-}
-
 void dvui_data_set(dvui_Window* win, dvui_Id id, const char* key, const void* value, size_t size) {
-    win = win_or_current(win);
-    dvui_MapEntry* e = dvui_map_get_or_put(&win->data_store, dvui_id_update(id, key));
-    e->used = true;
-    if (e->ptr && e->size == size) {
-        // stejná velikost: přepíšeme na místě, ukazatele zůstanou platné
-        if (e->ptr != value && size) memmove(e->ptr, value, size);
-        return;
-    }
-    // jiná velikost: starý blob uvolníme až na začátku dalšího snímku
-    data_trash(win, e->ptr);
-    e->ptr = malloc(size ? size : 1);
-    e->size = size;
-    if (size) memcpy(e->ptr, value, size);
+    dvui_data_store_set(&win_or_current(win)->data_store, dvui_id_update(id, key), value, size);
 }
 
 void* dvui_data_get(dvui_Window* win, dvui_Id id, const char* key, size_t size) {
-    win = win_or_current(win);
-    dvui_MapEntry* e = dvui_map_get(&win->data_store, dvui_id_update(id, key));
-    if (!e) return nullptr;
-    e->used = true;
-    if (e->size != size) {
-        DVUI_LOG_ERR("dataGet key \"%s\" has size %zu, asked for %zu", key, e->size, size);
-        return nullptr;
-    }
-    return e->ptr;
+    return dvui_data_store_get(&win_or_current(win)->data_store, dvui_id_update(id, key), size, key);
 }
 
 void* dvui_data_get_ptr_default(dvui_Window* win, dvui_Id id, const char* key, size_t size, const void* def) {
-    win = win_or_current(win);
-    void* p = dvui_data_get(win, id, key, size);
-    if (p) return p;
-    dvui_data_set(win, id, key, def, size);
-    return dvui_data_get(win, id, key, size);
+    return dvui_data_store_get_ptr_default(&win_or_current(win)->data_store, dvui_id_update(id, key), size, def, key);
 }
 
 void* dvui_data_get_slice(dvui_Window* win, dvui_Id id, const char* key, size_t* size) {
-    win = win_or_current(win);
-    dvui_MapEntry* e = dvui_map_get(&win->data_store, dvui_id_update(id, key));
-    if (!e) {
-        *size = 0;
-        return nullptr;
-    }
-    e->used = true;
-    *size = e->size;
-    return e->ptr;
+    return dvui_data_store_get_slice(&win_or_current(win)->data_store, dvui_id_update(id, key), size);
 }
 
 void dvui_data_remove(dvui_Window* win, dvui_Id id, const char* key) {
-    win = win_or_current(win);
-    const uint64_t k = dvui_id_update(id, key);
-    dvui_MapEntry* e = dvui_map_get(&win->data_store, k);
-    if (!e) return;
-    // blob může někdo ještě tento snímek používat – jen do koše
-    data_trash(win, e->ptr);
-    e->ptr = nullptr;
-    dvui_map_remove(&win->data_store, k);
-}
-
-// DVUI: Data.reset – zahodí data nepoužitá od minulého resetu.
-static void data_store_reset(dvui_Window* win) {
-    dvui_Map* m = &win->data_store;
-    for (size_t i = 0; i < m->cap; i++) {
-        dvui_MapEntry* e = &m->entries[i];
-        if (e->state != 1) continue;
-        if (e->used) {
-            e->used = false;
-        } else {
-            dvui_map_remove(m, e->key);
-        }
-    }
-    for (size_t i = 0; i < win->data_trash_len; i++) free(win->data_trash[i]);
-    win->data_trash_len = 0;
-}
-
-// DVUI: TrackingAutoHashMap(.put_only).reset – min. velikosti
-static void min_sizes_reset(dvui_Window* win) {
-    dvui_Map* m = &win->min_sizes;
-    for (size_t i = 0; i < m->cap; i++) {
-        dvui_MapEntry* e = &m->entries[i];
-        if (e->state != 1) continue;
-        if (e->used) {
-            e->used = false;
-        } else {
-            dvui_map_remove(m, e->key);
-        }
-    }
+    dvui_data_store_remove(&win_or_current(win)->data_store, dvui_id_update(id, key));
 }
 
 bool dvui_min_size_get(dvui_Id id, dvui_Size* out) {
@@ -474,8 +363,9 @@ void dvui_window_begin(dvui_Window* win, int64_t time_ns) {
     win->last_focused_id_this_frame = 0;
     win->last_focused_id_in_subwindow = 0;
 
-    data_store_reset(win);
-    min_sizes_reset(win);
+    // DVUI: data_store.reset, min_sizes.reset
+    dvui_data_store_reset(&win->data_store);
+    dvui_map_reset(&win->min_sizes);
 
     // backend.begin se volá před pixelSize/windowSize
     if (win->backend.begin) win->backend.begin(win->backend.ctx);

@@ -6,10 +6,14 @@ Postupně vytvořit sadu malých, čitelných projektů v C23, které věrně p�
 jednotlivé části knihovny [DVUI](https://github.com/david-vanderson/dvui)
 (immediate-mode GUI v jazyce Zig). Každý projekt izoluje jednu „esenci“ DVUI:
 
-1. **dvui-layout** – layout widgetů (tento plán, viz níže).
-2. dvui-text – vykreslování textu (později).
-3. dvui-text-selection – výběr textu (později).
-4. dvui-text-edit – editace textu (později).
+1. **dvui-layout** – layout widgetů (hotovo).
+2. **dvui-animation** – animace, easing, časovače a AnimateWidget (rozpracováno).
+3. dvui-text – vykreslování textu (později).
+4. dvui-text-selection – výběr textu (později).
+5. dvui-text-edit – editace textu (později).
+
+Kód společný všem projektům je v `shared/` (viz níže a
+[shared/README.md](shared/README.md)).
 
 ## Původní DVUI
 
@@ -45,15 +49,14 @@ Požadované widgety:
 
 ```
 dvui-layout/
-  meson.build
-  include/dvui/dvui.h          veřejné API (typy, Options, Window, widgety)
-  include/dvui/backend_sdl3gpu.h
-  include/dvui/backend_testing.h
+  meson.build                  používá soubory z ../shared
+  include/dvui/dvui.h          veřejné API (Options, Window, widgety); vkládá dvui/base.h
   src/
-    core.c                     Id, Rect, Size, Point, Color, Options, placeIn
-    data.c                     hash mapa pro min_sizes a datové úložiště (dataGet/dataSet)
+    core.c                     Options, téma, placeIn, geometrie závislá na okně
+    frame.c                    alokace v aréně snímku, seznamy příkazů kreslení
     window.c                   Window.begin/end, události, subwindows, capture,
-                               focus, dragging, refresh, renderovací fronta
+                               focus, dragging, refresh, renderovací fronta,
+                               dvui_data_* nad sdíleným dvui_DataStore
     widget_data.c              WidgetData (init/register/minSize*, borderAndBackground)
     layout.c                   BasicLayout, placeOnScreen
     widgets/box.c, button.c, simple.c (spacer, separator, label placeholder,
@@ -61,11 +64,6 @@ dvui-layout/
                                scroll_container.c, scroll_area.c, grid.c,
                                floating.c (floating, tooltip, floating window,
                                window header)
-    backends/sdl3gpu.c         backend nad SDL3 GPU + mapování událostí SDL
-    backends/testing.c         backend bez GPU pro testy
-  shaders/                     zkompilované shadery převzaté z DVUI
-  tools/embed.c                malý nástroj (překládaný Mesonem) pro vložení
-                               shaderů do C pole
   examples/demo.c              demo se všemi widgety
   tests/test_layout.c          testy layoutu (víc snímků, kontrola obdélníků)
 ```
@@ -74,7 +72,8 @@ Mapování DVUI → C:
 
 | DVUI (Zig) | dvui-layout (C) |
 |---|---|
-| `Rect.zig`, `Size.zig`, `Point.zig`, `RectScale.zig` | `core.c` |
+| `Rect.zig`, `Size.zig`, `Point.zig`, `RectScale.zig`, `Color.zig` | `shared/src/geometry.c` (+ `core.c`: `visible`, `toNatural`) |
+| `Data.zig`, `tracking_hash_map.zig` | `shared/src/data.c` |
 | `Options.zig` | `core.c` (`dvui_Options`, `dvui_options_override`) |
 | `dvui.zig` – `placeIn`, `events`, `eventMatch`, `clicked`, `captureMouse`, `dataGet/Set`, `parentSet/Reset`, `refresh`, `hoverFade` | `window.c`, `core.c` |
 | `Window.zig` | `window.c` |
@@ -87,7 +86,7 @@ Mapování DVUI → C:
 | `widgets/GridWidget.zig` | `widgets/grid.c` |
 | `widgets/FloatingWidget.zig`, `FloatingTooltipWidget.zig`, `FloatingWindowWidget.zig` | `widgets/floating.c` |
 | `widgets/OverlayWidget.zig`, `ScaleWidget.zig`, `LabelWidget.zig` (bez textu) | `widgets/simple.c` |
-| `backends/sdl3gpu.zig` | `backends/sdl3gpu.c` |
+| `backends/sdl3gpu.zig`, `backends/testing.zig` | `shared/src/backends/` |
 
 ### Fáze
 
@@ -121,3 +120,61 @@ DVUI `Options` i `InitOptions` (viz `dvui-layout/docs/ROZHRANI.md`, kap. 3).
 Možné další kroky:
 - Ověřit build na Windows (Clang/MinGW, D3D12) a macOS (Metal).
 - Případně doplnit klávesovou navigaci (tab_index) a kurzor v gridu.
+
+## Sdílený kód (shared/)
+
+Vytažen z dvui-layout, aby ho mohly používat další projekty. Obsah,
+použití v `meson.build` a rozhraní mezi backendem a oknem popisuje
+[shared/README.md](shared/README.md). Zásada: zobecňovat jen málo, jinak
+kód zduplikovat do projektu (viz AGENTS.md).
+
+```
+shared/
+  include/dvui/base.h          Id, DVUI_SRC, geometrie, barvy, vstupní výčty,
+                               dvui_Vertex, dvui_Backend, funkce okna volané backendem
+  include/dvui/util.h          logování, min/max
+  include/dvui/data.h          aréna, hash mapa, dvui_DataStore
+  include/dvui/backend_sdl3gpu.h, backend_testing.h
+  src/base.c                   id, pomocné funkce vstupu
+  src/geometry.c               Rect, Size, Point, RectScale, Color
+  src/data.c                   aréna, hash mapa, datové úložiště
+  src/backends/sdl3gpu.c, testing.c
+  shaders/, tools/embed.c
+```
+
+- [x] Krok 1: přesun sdíleného kódu z dvui-layout do `shared/`; dvui-layout
+      ho používá, testy (159 kontrol) projdou, demo je pixelově stejné.
+
+## Projekt dvui-animation
+
+### Zadání
+
+Animace z DVUI nad backendem SDL 3 GPU (+ testovací backend). Widgety box
+a button jako obdélníky bez textu, pomocné `label_placeholder` a `spacer`.
+Výchozí bod je kopie dvui-layout bez scrollu, gridu a plovoucích widgetů.
+
+Implementovat (zdroje v `dvui-original/src`):
+- `dvui_Animation` (dvui.zig – `Animation`: `value`, `done`);
+- `dvui_animation`, `dvui_animation_get`, mapa animací v okně
+  (Window.zig – `animations`), stárnutí a mazání ve `window_begin`;
+- časovače `dvui_timer`, `timer_get`, `timer_done`, `timer_done_or_none`;
+- `reduce_motion`;
+- `dvui_window_end` vracející čas do dalšího snímku a `Window.waitTime`;
+- všechny funkce z `easing.zig`;
+- AnimateWidget (`dvui.animate`): druhy alpha, vertical, horizontal, none.
+
+### Fáze
+
+- [ ] Fáze 1: kopie dvui-layout → dvui-animation, odstranění scrollu,
+      gridu a plovoucích widgetů; build a zúžené testy.
+- [ ] Fáze 2: easing, `dvui_Animation`, mapa animací, stárnutí v `begin`,
+      časovače, `reduce_motion`.
+- [ ] Fáze 3: návratová hodnota `dvui_window_end`, `waitTime`, úprava
+      backendu a smyčky dema.
+- [ ] Fáze 4: AnimateWidget a alfa při kreslení.
+- [ ] Fáze 5: testy (easing, window_end, životnost animací, časovače,
+      AnimateWidget, reduce_motion).
+- [ ] Fáze 6: demo podle `Examples/animations.zig` bez textu.
+- [ ] Fáze 7: dokumentace (`dvui-animation/README.md`, `docs/ANIMACE.md`,
+      `docs/ROZHRANI.md`, `docs/ODCHYLKY.md`), ověření buildu (GCC, Clang,
+      ASan/UBSan), snímek dema.

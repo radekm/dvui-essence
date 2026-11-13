@@ -1,8 +1,8 @@
-// Backend nad SDL 3 GPU.
+// Backend nad SDL 3 GPU (sdílený, viz shared/README.md).
 // DVUI: src/backends/sdl3gpu.zig
 #pragma once
 
-#include "dvui.h"
+#include "base.h"
 
 #include <SDL3/SDL.h>
 

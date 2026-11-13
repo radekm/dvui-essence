@@ -69,8 +69,10 @@ Id 0 znamená „žádné“ (Zig `?Id = null`). Podrobnosti o id v
 
 ## 3. Hashovací mapa
 
-Obě mapy jsou stejného typu `dvui_Map` (`src/internal.h`, `src/data.c`),
-náhrada za DVUI `TrackingAutoHashMap`:
+Obě mapy jsou stejného typu `dvui_Map`, náhrada za DVUI
+`TrackingAutoHashMap`. Mapa je sdílená s ostatními projekty
+(`../shared/include/dvui/data.h`, `../shared/src/data.c`, viz
+[shared/README.md](../../shared/README.md)):
 
 - **otevřené adresování** s lineárním hledáním; hash klíče je finalizér
   z MurmurHash3 (`mix`);
@@ -87,6 +89,7 @@ náhrada za DVUI `TrackingAutoHashMap`:
 | `dvui_map_get(m, key)` | najde položku, nebo NULL |
 | `dvui_map_get_or_put(m, key)` | najde, nebo vloží prázdnou (`ptr = NULL`) |
 | `dvui_map_remove(m, key)` | uvolní blob a položku označí jako smazanou |
+| `dvui_map_reset(m)` | úklid podle `used` (kap. 6) |
 | `dvui_map_free(m)` | uvolní všechno (při zničení okna) |
 
 Mapa sama `used` nenastavuje – to dělají funkce nad ní (kap. 4 a 5).
@@ -118,6 +121,13 @@ Mapa sama `used` nenastavuje – to dělají funkce nad ní (kap. 4 a 5).
 `win->data_store` (DVUI `Window.data_store`, `Data.zig`): **klíč =
 `dvui_id_update(id, "_klíč")`, hodnota = libovolný blob**.
 
+Úložiště je sdílená struktura `dvui_DataStore` (mapa `storage` + koš
+`trash`, `../shared/include/dvui/data.h`) s funkcemi
+`dvui_data_store_set/get/get_ptr_default/get_slice/remove/reset`. Okno ji
+obsahuje a funkce `dvui_data_*` v `src/window.c` z id a jména spočítají
+klíč a zavolají sdílenou funkci. Chování popsané níže je tedy ve všech
+projektech stejné.
+
 | Funkce / makro | Význam |
 |---|---|
 | `dvui_data_set(win, id, key, &v, size)` / `DVUI_DATA_SET(id, key, T, v)` | uloží kopii hodnoty |
@@ -145,7 +155,7 @@ si->viewport.y += 10;          // změna rovnou v úložišti
 
 **Koš.** Když se změní velikost hodnoty (např. grid přidá sloupec a pole
 `"__col_widths"` se prodlouží) nebo se hodnota odstraní, starý blob se
-**neuvolní hned**, ale přesune do koše (`win->data_trash`). Koš se vysype až
+**neuvolní hned**, ale přesune do koše (`win->data_store.trash`). Koš se vysype až
 na začátku dalšího snímku, takže kód, který si tento snímek ukazatel na
 starou hodnotu už vzal, nespadne. Až do konce snímku ale vidí starou kopii.
 
@@ -156,7 +166,8 @@ starý obsah a doplní výchozí hodnoty (DVUI `dataSetSliceCopies`).
 ## 6. Úklid: co nepoužitého zmizí
 
 Na začátku každého snímku (`dvui_window_begin`) se projdou obě mapy
-(DVUI `Data.reset`, `TrackingAutoHashMap.reset`):
+(DVUI `Data.reset`, `TrackingAutoHashMap.reset`; v kódu
+`dvui_data_store_reset` a `dvui_map_reset`):
 
 ```
 pro každou položku:

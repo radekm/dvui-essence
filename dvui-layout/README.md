@@ -101,20 +101,28 @@ Poznámky k API:
 ## Struktura
 
 ```
-include/dvui/dvui.h               veřejné API
-include/dvui/backend_sdl3gpu.h    backend SDL 3 GPU
-include/dvui/backend_testing.h    testovací backend (bez GPU)
-src/core.c                        geometrie, barvy, Options, téma, placeIn
+include/dvui/dvui.h               veřejné API (vkládá sdílené dvui/base.h)
+src/core.c                        Options, téma, placeIn, geometrie závislá na okně
+src/frame.c                       alokace v aréně snímku, seznamy příkazů kreslení
 src/window.c                      Window, události, capture, fokus, subwindows,
-                                  datové úložiště, renderovací fronta
+                                  funkce datového úložiště, renderovací fronta
 src/widget_data.c                 WidgetData
 src/layout.c                      BasicLayout, placeOnScreen
 src/widgets/                      widgety
-src/backends/                     SDL 3 GPU a testovací backend
-shaders/                          předkompilované shadery z DVUI
-tools/embed.c                     vložení shaderů do C (náhrada #embed)
 tests/test_layout.c               testy layoutu
 examples/demo.c                   demo
+```
+
+Projekt používá sdílený kód z `../shared/` (soubory se v `meson.build`
+uvádějí cestou `../shared/…`), viz [shared/README.md](../shared/README.md):
+
+```
+../shared/include/dvui/base.h             základní typy, rozhraní backendu
+../shared/include/dvui/data.h, util.h     aréna, hash mapa, datové úložiště, logování
+../shared/include/dvui/backend_*.h        backend SDL 3 GPU a testovací backend
+../shared/src/                            id, geometrie a barvy, data, backendy
+../shared/shaders/                        předkompilované shadery z DVUI
+../shared/tools/embed.c                   vložení shaderů do C (náhrada #embed)
 ```
 
 ## Odchylky od DVUI
@@ -145,6 +153,8 @@ stručně:
   velikostí.
 - **Paměť:** bez vlastních alokátorů (`malloc`/`free`, vlastní aréna
   snímku), při nedostatku paměti `abort()`.
+- **Sdílený kód:** základní typy, geometrie, datové úložiště
+  (`dvui_DataStore`) a backendy jsou v `../shared/`; chování to nemění.
 - **Backendy:** zúžené rozhraní (bez textur, schránky, víc oken); SDL 3 GPU
   maže okno barvou pozadí, má jen bílou texturu 1×1 a 32bitové indexy.
 

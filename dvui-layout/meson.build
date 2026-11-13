@@ -11,13 +11,21 @@ project(
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
-inc = include_directories('include')
+# Sdílený kód je v ../shared (viz ../shared/README.md). Meson dovoluje
+# v files() a include_directories() cesty mimo adresář projektu.
+shared_dir = '../shared'
+
+inc = include_directories('include', shared_dir / 'include')
 
 # --- jádro layoutu (bez závislostí) -----------------------------------------
 
 core_sources = files(
+  shared_dir / 'src/base.c',
+  shared_dir / 'src/geometry.c',
+  shared_dir / 'src/data.c',
+  shared_dir / 'src/backends/testing.c',
   'src/core.c',
-  'src/data.c',
+  'src/frame.c',
   'src/layout.c',
   'src/widget_data.c',
   'src/window.c',
@@ -30,7 +38,6 @@ core_sources = files(
   'src/widgets/scroll_container.c',
   'src/widgets/scroll_info.c',
   'src/widgets/simple.c',
-  'src/backends/testing.c',
 )
 
 dvui_layout_lib = static_library(
@@ -61,13 +68,13 @@ sdl3_dep = dependency('sdl3', required: get_option('sdl3'))
 
 if sdl3_dep.found()
   # Shadery převzaté z DVUI vložíme do C polí malým nástrojem z tools/.
-  embed = executable('embed', 'tools/embed.c', native: true)
+  embed = executable('embed', shared_dir / 'tools/embed.c', native: true)
   shader_sources = []
   foreach stage : ['vertex', 'fragment']
     foreach fmt : ['spv', 'msl', 'dxil']
       shader_sources += custom_target(
         'shader_@0@_@1@'.format(stage, fmt),
-        input: 'shaders/default.@0@.@1@'.format(stage, fmt),
+        input: shared_dir / 'shaders/default.@0@.@1@'.format(stage, fmt),
         output: 'shader_@0@_@1@.c'.format(stage, fmt),
         command: [embed, '@INPUT@', '@OUTPUT@', 'dvui_shader_@0@_@1@'.format(stage, fmt)],
       )
@@ -76,7 +83,7 @@ if sdl3_dep.found()
 
   dvui_sdl3gpu_lib = static_library(
     'dvui-layout-sdl3gpu',
-    'src/backends/sdl3gpu.c',
+    shared_dir / 'src/backends/sdl3gpu.c',
     shader_sources,
     include_directories: inc,
     dependencies: [sdl3_dep],

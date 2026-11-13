@@ -238,7 +238,7 @@ dvui_Sdl3GpuBackend* dvui_sdl3gpu_create(dvui_Sdl3GpuInitOptions options) {
     b->clear_color = options.clear_color ? *options.clear_color : DVUI_RGB(0xf0, 0xf0, 0xf0);
 
     const SDL_WindowFlags flags = SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | (options.hidden ? SDL_WINDOW_HIDDEN : 0);
-    b->window = SDL_CreateWindow(options.title ? options.title : "dvui-layout", (int)options.size.w, (int)options.size.h, flags);
+    b->window = SDL_CreateWindow(options.title ? options.title : "dvui", (int)options.size.w, (int)options.size.h, flags);
     if (!b->window) goto fail;
 
     b->device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL, true, nullptr);

@@ -66,6 +66,15 @@ Mechanické rozdíly, které plynou z jazyka. Nejsou to změny chování.
 
 Konvence pojmenování a komentářů popisuje [AGENTS.md](../../AGENTS.md).
 
+**Rozdělení kódu.** Část kódu je sdílená s ostatními projekty repozitáře
+v adresáři `../shared/` (viz [shared/README.md](../../shared/README.md)):
+základní typy (`dvui/base.h`), geometrie a barvy, id, aréna, hash mapa,
+datové úložiště a oba backendy. Chování to nemění; jen DVUI `Data`
+(`Window.data_store`) je v C samostatná struktura `dvui_DataStore`, kterou
+okno obsahuje, a funkce `dvui_data_*` okna z id a jména spočítají klíč
+a zavolají `dvui_data_store_*` (DVUI dělá totéž v `dvui.dataSet` →
+`Data.set`).
+
 ## 3. API vlastností widgetů
 
 DVUI předává widgetu dvě struktury: `InitOptions` (vlastnosti konkrétního
@@ -256,8 +265,8 @@ DVUI dostává `std.mem.Allocator` (gpa) a používá arénu snímku, LIFO arén
 a zásobník widgetů. dvui-layout:
 
 - **nepodporuje vlastní alokátory** – používá `malloc` / `free`;
-- má vlastní arénu snímku (`dvui_frame_alloc`), kterou vynuluje
-  `dvui_window_end`;
+- má vlastní arénu snímku (`dvui_frame_alloc`; aréna sama je sdílená
+  v `../shared/src/data.c`), kterou vynuluje `dvui_window_end`;
 - LIFO aréna není potřeba (nekreslí se cesty);
 - widgety z pohodlných maker mají každý vlastní `calloc` místo zásobníku;
   okno je eviduje a ty, které program zapomněl uvolnit, uvolní na konci
@@ -271,6 +280,10 @@ a [STAV.md](STAV.md).
 
 ## 9. Backendy
 
+Rozhraní backendu i oba backendy jsou sdílené s ostatními projekty
+(`../shared/`, viz [shared/README.md](../../shared/README.md)); odchylky
+níže proto platí pro všechny projekty.
+
 **Rozhraní backendu** (`dvui_Backend`) má jen funkce, které layout
 a kreslení obdélníků potřebují: `begin`, `end`, `pixel_size`,
 `window_size`, `content_scale`, `draw_clipped_triangles` (bez textury),
@@ -278,7 +291,7 @@ a kreslení obdélníků potřebují: `begin`, `end`, `pixel_size`,
 targety, schránka, `textInputRect`, `openURL`, `refresh` z jiného vlákna,
 AccessKit a správa víc oken.
 
-**SDL 3 GPU** (`src/backends/sdl3gpu.c`, DVUI `sdl3gpu.zig`):
+**SDL 3 GPU** (`../shared/src/backends/sdl3gpu.c`, DVUI `sdl3gpu.zig`):
 - shadery jsou převzaté z DVUI (předkompilované SPIR-V, MSL, DXIL);
 - okno se na začátku snímku maže barvou pozadí (výchozí `#f0f0f0`) místo
   `LOADOP_LOAD`;
@@ -287,7 +300,7 @@ AccessKit a správa víc oken.
 - nepovinné parametry `dvui_Sdl3GpuInitOptions` (`min_size`,
   `clear_color`) jsou ukazatele.
 
-**Testovací backend** (`src/backends/testing.c`, DVUI
+**Testovací backend** (`../shared/src/backends/testing.c`, DVUI
 `backends/testing.zig`): bez GPU; velikost okna zadává test a vykreslené
 obdélníky se ukládají do pole `draws` (obdélník, barva, clip). Pomocné
 funkce `dvui.testing` (`settle`, `moveTo`, `click`) nejsou součástí

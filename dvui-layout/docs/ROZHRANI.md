@@ -3,7 +3,11 @@
 Přehled hlavních rozhraní dvui-layout: smyčka snímku, widget a jeho data,
 Options, id, rodiče, události, datové úložiště, kreslení, backend a správa
 paměti. Jak se z toho počítá layout, popisuje [LAYOUT.md](LAYOUT.md).
-Všechny deklarace jsou v `include/dvui/dvui.h`.
+Deklarace jsou v `include/dvui/dvui.h`. Základní typy (id, `DVUI_SRC`,
+geometrie, barvy, tlačítka, klávesy, kurzory), rozhraní backendu a funkce
+okna volané backendem jsou ve sdílené hlavičce `dvui/base.h`, kterou
+`dvui.h` vkládá; leží v `../shared/include/` spolu s backendy (viz
+[shared/README.md](../../shared/README.md)).
 
 Obsah:
 
@@ -336,7 +340,9 @@ a puštění tlačítka i mimo svůj obdélník:
 
 Widget si mezi snímky pamatuje stav pod klíčem `(id, "jméno")`
 (DVUI `dataGet`/`dataSet`). Jak to funguje uvnitř (mapy, úklid, koš,
-seznam klíčů), popisuje [STAV.md](STAV.md).
+seznam klíčů), popisuje [STAV.md](STAV.md). Samotné úložiště
+(`dvui_DataStore`) je sdílené (`../shared/include/dvui/data.h`); okno ho
+obsahuje a funkce níže jen spočítají klíč z id a jména a zavolají ho.
 
 | Funkce | Význam |
 |---|---|
@@ -400,7 +406,13 @@ self->prev_scroll = dvui_scroll_container_scroll_set(nullptr);
 
 ## 10. Backend
 
-Backend je struktura ukazatelů na funkce (DVUI `Backend.zig`):
+Backend je struktura ukazatelů na funkce (DVUI `Backend.zig`). Rozhraní
+i oba backendy jsou sdílené s ostatními projekty – leží v `../shared/`
+(hlavičky `dvui/base.h`, `dvui/backend_sdl3gpu.h`,
+`dvui/backend_testing.h`). Backend volá funkce okna
+`dvui_window_add_event_*`, `dvui_window_modifiers_set` a čte
+`dvui_scroll_speed`; ty implementuje `src/window.c` (rozhraní mezi
+backendem a oknem popisuje [shared/README.md](../../shared/README.md)).
 
 ```c
 typedef struct dvui_Backend {
@@ -430,19 +442,20 @@ typedef struct dvui_Backend {
 | `render_present` | na konci `end` | zobrazit snímek |
 | `nano_time` | program (pro `dvui_window_begin`) | monotónní čas v ns |
 
-**SDL3 GPU** (`include/dvui/backend_sdl3gpu.h`): `dvui_sdl3gpu_create`
+**SDL3 GPU** (`../shared/include/dvui/backend_sdl3gpu.h`): `dvui_sdl3gpu_create`
 (okno, GPU zařízení, pipeline, shadery), `dvui_sdl3gpu_backend`,
 `dvui_sdl3gpu_add_all_events` / `dvui_sdl3gpu_add_event` (převod událostí
 SDL), `dvui_sdl3gpu_wait_event_timeout`, `dvui_sdl3gpu_destroy`.
 
-**Testovací backend** (`include/dvui/backend_testing.h`): bez GPU;
+**Testovací backend** (`../shared/include/dvui/backend_testing.h`): bez GPU;
 velikost okna zadává test, vykreslené obdélníky ukládá do `draws`
 (ohraničení, barva, clip) pro kontrolu.
 
 ## 11. Správa paměti
 
 dvui-layout nepodporuje vlastní alokátory; používá `malloc`/`free` a jednu
-vlastní arénu. Při nedostatku paměti program skončí (`abort`).
+vlastní arénu (aréna, hash mapa a datové úložiště jsou sdílené –
+`../shared/src/data.c`). Při nedostatku paměti program skončí (`abort`).
 
 | Co | Jak | Jak dlouho žije |
 |---|---|---|

@@ -3,74 +3,21 @@
 
 #include "dvui/dvui.h"
 
-#include <stdio.h>
-
-// ---------------------------------------------------------------------------
-// Logování (DVUI: dvui.log)
-// ---------------------------------------------------------------------------
-
-#define DVUI_LOG_ERR(...) (fprintf(stderr, "dvui error: " __VA_ARGS__), fputc('\n', stderr))
-#define DVUI_LOG_DEBUG(...) ((void)0)
+#include "dvui/data.h"
+#include "dvui/util.h"
 
 // Seznam značek, kterým widget rozumí (pro dvui_props_resolve):
 //     DVUI_TAGS(DVUI_PROP_dir, DVUI_PROP_equal_space)
 #define DVUI_TAGS(...) ((const dvui_PropTag[]){__VA_ARGS__ __VA_OPT__(, ) DVUI_PROP_END})
 
-#define DVUI_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define DVUI_MAX(a, b) ((a) > (b) ? (a) : (b))
-
-static inline float dvui_clampf(float v, float lo, float hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
-}
-
 // ---------------------------------------------------------------------------
-// Aréna pro data jednoho snímku (DVUI: Window.arena)
+// Data snímku (aréna, hash mapa a datové úložiště jsou ve shared – dvui/data.h)
 // ---------------------------------------------------------------------------
 
-typedef struct dvui_ArenaChunk dvui_ArenaChunk;
-struct dvui_ArenaChunk {
-    dvui_ArenaChunk* next;
-    size_t cap;
-    size_t used;
-    // za hlavičkou následují data
-};
-
-typedef struct dvui_Arena {
-    dvui_ArenaChunk* head;
-} dvui_Arena;
-
-void* dvui_arena_alloc(dvui_Arena* a, size_t size);
-void dvui_arena_reset(dvui_Arena* a);
-void dvui_arena_free_all(dvui_Arena* a);
 // Alokace v aréně aktuálního okna.
 void* dvui_frame_alloc(size_t size);
 // Zvětší pole v aréně (zkopíruje obsah, staré místo nechá ležet).
 void* dvui_frame_grow(void* items, size_t* cap, size_t elem_size, size_t needed);
-
-// ---------------------------------------------------------------------------
-// Hash mapa u64 → blob se značkou „použito“ (DVUI: TrackingAutoHashMap)
-// ---------------------------------------------------------------------------
-
-typedef struct dvui_MapEntry {
-    uint64_t key;
-    uint8_t state; // 0 = prázdné, 1 = obsazené, 2 = smazané
-    bool used;
-    void* ptr;
-    size_t size;
-} dvui_MapEntry;
-
-typedef struct dvui_Map {
-    dvui_MapEntry* entries;
-    size_t cap;
-    size_t count;
-    size_t tombstones;
-} dvui_Map;
-
-dvui_MapEntry* dvui_map_get(dvui_Map* m, uint64_t key);
-// Vrátí položku pro klíč, případně vytvoří prázdnou (ptr = NULL, size = 0).
-dvui_MapEntry* dvui_map_get_or_put(dvui_Map* m, uint64_t key);
-void dvui_map_remove(dvui_Map* m, uint64_t key);
-void dvui_map_free(dvui_Map* m);
 
 // ---------------------------------------------------------------------------
 // Renderovací příkazy (DVUI: RenderCommand – zde jen obdélníky)
@@ -171,10 +118,8 @@ struct dvui_Window {
 
     dvui_Arena arena;
     dvui_Map min_sizes;
-    dvui_Map data_store;
-    // Bloby nahrazené během snímku; uvolní se na začátku dalšího snímku.
-    void** data_trash;
-    size_t data_trash_len, data_trash_cap;
+    // DVUI: Window.data_store (sdílené – dvui/data.h)
+    dvui_DataStore data_store;
 
     dvui_Subwindows subwindows;
 

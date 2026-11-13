@@ -17,7 +17,26 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 - Výchozí a pracovní větev je `master`.
 - Repozitář obsahuje více samostatných projektů, každý ve vlastním adresáři
   (`dvui-layout/`, později `dvui-text/`, `dvui-text-selection/`, `dvui-text-edit/`, …).
-- Každý projekt má vlastní `meson.build` a lze ho sestavit samostatně.
+- Každý projekt má vlastní `meson.build` a lze ho sestavit samostatně
+  (ze svého adresáře).
+- `shared/` obsahuje kód společný všem projektům (popis v
+  [shared/README.md](shared/README.md)): základní typy (`dvui/base.h` –
+  id, `DVUI_SRC`, geometrie, barvy, vstupní výčty, `dvui_Backend`
+  a deklarace funkcí okna volaných backendem), geometrii a barvy, id,
+  arénu, hash mapu, datové úložiště (`dvui_DataStore`), backendy SDL 3 GPU
+  a testovací, shadery a nástroj `tools/embed.c`. `shared/` nemá vlastní
+  `meson.build`; projekty jeho soubory uvádějí cestou `../shared/…`.
+- Každý projekt má **vlastní** (zkopírovaný a upravený) zbytek: `dvui.h`,
+  okno (`window.c`), WidgetData, vlastnosti widgetů (seznam značek
+  `dvui_Prop`, X-makra), téma, layout a widgety. Funkce okna, které volá
+  backend (`dvui_window_add_event_*`, `dvui_window_modifiers_set`,
+  `dvui_scroll_speed`), implementuje každý projekt ve svém okně.
+- **Zásada pro sdílený kód: zobecňuj jen málo.** Do `shared/` patří jen to,
+  co jde sdílet beze změny nebo s malou úpravou. Když by sdílení vyžadovalo
+  výraznější změnu (parametrizaci, háčky, podmínky pro jednotlivé
+  projekty), kód raději zduplikuj do projektu a uprav. Když nevíš,
+  zeptej se vlastníka. Změna ve `shared/` musí zachovat build, testy
+  a chování všech projektů, které ho používají.
 - `dvui-original/` je **neměnná** kopie původního DVUI (obyčejné soubory, ne
   submodul). Slouží jako reference. Nikdy ji neupravuj; při aktualizaci na novější
   verzi DVUI se nahradí celá a v PLAN.md se zapíše nový commit.
@@ -44,10 +63,11 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 - Seznam povolených závislostí:
   | Závislost | Kde | Poznámka |
   |---|---|---|
-  | SDL 3 | systém | jen backend a demo; jádro layoutu na SDL nezávisí |
+  | SDL 3 | systém | jen backend a demo; jádro projektů na SDL nezávisí |
 - Předkompilované shadery pro SDL3 GPU jsou převzaté z DVUI
   (`dvui-original/src/backends/sdl3gpu/compiled/`), nejsou to nové závislosti.
-  Do C se vkládají vlastním malým nástrojem `dvui-layout/tools/embed.c`.
+  Leží v `shared/shaders/` a do C se vkládají vlastním malým nástrojem
+  `shared/tools/embed.c`.
 
 ## Věrnost DVUI
 
@@ -63,6 +83,16 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
   a stručně do sekce „Odchylky od DVUI“ v `README.md` příslušného
   projektu. Neodchyluj se bez důvodu.
 
+## Dokumentace patří k projektu
+
+- Každý projekt má dokumentaci u sebe: `<projekt>/README.md`
+  a `<projekt>/docs/`. Sdílený kód má `shared/README.md`.
+- Kořenový `README.md` obsahuje jen přehled projektů a odkazy na jejich
+  dokumentaci; stav a plán jsou v `PLAN.md`.
+- Dokumentaci jednoho projektu nedávej do jiného. Když se projekt změní
+  kvůli `shared/`, aktualizuj jeho vlastní dokumentaci (rozhraní, stav,
+  odchylky) a odkaž na `shared/README.md`.
+
 ## Styl kódu
 
 - Hvězdička ukazatele patří k typu: `Typ* p`, `const char* name`,
@@ -72,7 +102,8 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 
 ## Kvalita
 
-- Před commitem musí projít `meson test` daného projektu.
+- Před commitem musí projít `meson test` daného projektu (při změně
+  `shared/` všech projektů).
 - Layout se testuje bez GPU přes testovací backend (`backends/testing`), stejně
   jako to dělá DVUI.
 - Kód se překládá bez varování s `warning_level=3`.
