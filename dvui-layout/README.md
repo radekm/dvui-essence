@@ -18,6 +18,9 @@ port DVUI (commit `2efa35e`, kopie je v `../dvui-original`).
 - [docs/STAV.md](docs/STAV.md) – držení stavu mezi snímky: min. velikosti
   a datové úložiště (hashovací mapy podle id), úklid nepoužitých položek,
   capture, fokus a subwindows, klíče používané widgety.
+- [docs/ODCHYLKY.md](docs/ODCHYLKY.md) – podrobně, čím se implementace liší
+  od DVUI: převod ze Zigu do C, API vlastností, id, vynechané vlastnosti
+  a funkce, změněné chování, paměť, backendy a vliv na layout.
 - [docs/NEIMPLEMENTOVANO.md](docs/NEIMPLEMENTOVANO.md) – kontejnery z DVUI,
   které zatím chybí (Paned, FlexBox, Reorder, Tabs, menu, Docking, …): co
   dělají, jak těžké by bylo je doplnit a co chybí v jádru.
@@ -118,65 +121,32 @@ examples/demo.c                   demo
 
 Layout (placeIn, BasicLayout, BoxWidget, ScrollContainer/ScrollArea,
 GridWidget, plovoucí widgety, min. velikosti z minulého snímku, refresh,
-datové úložiště a jeho klíče) odpovídá DVUI. Vědomě se liší:
+datové úložiště a jeho klíče) odpovídá DVUI a dává stejné obdélníky.
+Podrobný přehled všech odchylek je v [docs/ODCHYLKY.md](docs/ODCHYLKY.md);
+stručně:
 
-**Vynecháno úplně**
-- Text, fonty, ikony, obrázky a textury. Místo `LabelWidget` je
-  `dvui_label_placeholder` se zadanou „velikostí textu“; `dvui_button`,
-  `dvui_tooltip` a `dvui_window_header` ho používají místo popisku.
-  Velikost písmene „M“ (DVUI `Font.sizeM`, používá ji grid) je konstanta 9×12.
-- Zaoblené rohy (`corners`), stíny (`box_shadow`), gradienty, ninepatch,
-  rotace, `fade` (vyhlazení okrajů). Kreslí se jen obdélníky; okraj je tah
-  ze 4 obdélníků. Úchyt posuvníku je obdélník.
-- AccessKit, dialogy, toasty, animace a časovače (kromě `hoverFade`),
-  zpoždění tooltipu (`delay`), `tag`, `data_out`, `theme` v Options,
-  ladicí okno.
-- Klávesová navigace tabulátorem (`tab_index`, `tabIndexNext/Prev`,
-  šipky v `Window.end`) a `FocusGroupWidget`.
-- Dotykové ovládání: v DVUI má každý prst vlastní capture a tažení; zde je
-  jen myš (jeden capture, jedno tažení). Proto chybí i `processMotionScroll`
-  a dotyková část `ScrollContainerWidget.processEvent`. Setrvačné
-  scrollování (`velocity`) je zachované, ale bez doteku se nespustí.
-- Grid: kurzor buněk, klávesová navigace, fokus buněk, `focusOnWidget`,
-  editace buněk (`editable`), řazení (`headerSortable`), `cellActivated`.
-  `cellHovered` funguje jen v režimu myši. Zůstává celý layout: hlavičky,
-  auto-size sloupců i řádků přes více snímků, roztahování a zmenšování
-  sloupců, ruční změna šířky tažením, `rowsVisible`, `cellFromPoint`.
-- Render targety a vykreslování do textury.
-
-**Změněno**
-- API vlastností: místo struktur `Options` a `InitOptions` s volitelnými
-  poli (Zig `?T`) dostává widget jeden seznam značek (`dvui_Prop`).
-  Vyhodnocení odpovídá DVUI `defaults.override(opts)`; zadané společné
-  vlastnosti si `dvui_Options` pamatuje v bitové masce `set`. Vlastnosti
-  widgetu z DVUI s výchozí hodnotou `null` mají v interních
-  `*InitOptions` příznak `has_*`. Jména vlastností jsou převzatá z DVUI
-  s výjimkami: `ScrollBarWidget` `direction` → `dir`,
-  `FloatingTooltipWidget` `scale` → `tooltip_scale`,
-  `FloatingWindowWidget` `rect` → `rect_io`, `CellOptions.col_resizable`
-  → `resizable` (jako u hlavičky), velikost popisku/titulku → `label_size`.
-  `GridWidget.InitOptions.scroll_opts` není vnořená struktura – vlastnosti
-  ScrollArea se gridu dávají přímo do jeho seznamu. Cizí vlastnost se
-  ohlásí na stderr.
-- Téma: barva `{0, 0, 0, 0}` znamená „nenastaveno“ (DVUI `?Color = null`).
-- Téma: jen jedno (barvy podle Adwaita Light). `Color.lighten` v DVUI mění
-  světlost v HSLuv; zde se mění L v CIE LCh(uv) se zachovaným chroma
-  (pro šedé barvy je výsledek stejný).
-- Id: DVUI hashuje ukazatel na jméno souboru, řádek a sloupec; zde adresu
-  řetězcového literálu `"soubor:řádek:čítač"`, který `DVUI_SRC` vytvoří pro
-  každé místo ve zdrojáku (čítač = `__COUNTER__`, rozliší dvě místa na
-  jednom řádku). Hodnota id 0 znamená „žádné id“ (v Zigu `?Id = null`).
-- Backend SDL 3 GPU maže okno barvou pozadí (výchozí `#f0f0f0`) místo
-  `LOADOP_LOAD`; textura je jen bílá 1×1, sampler nearest; indexy 32bitové.
-- `Event.handle` nepíše ladicí log; `refresh` neloguje zdroj.
-- Kódy kláves a modifikátory: jen ty, které widgety používají
-  (Enter/mezerník = „activate“, šipky, PageUp/PageDown, …).
-- Alokátory: DVUI dostává `std.mem.Allocator` (gpa) a používá arénu snímku,
-  LIFO arénu a zásobník widgetů. dvui-layout nepodporuje vlastní alokátory:
-  používá `malloc`/`free` a vlastní arénu snímku; LIFO aréna není potřeba
-  (nekreslí se cesty); widgety z „pohodlných“ funkcí mají každý vlastní
-  `calloc` místo zásobníku. Při nedostatku paměti se volá `abort()`.
-  Podrobně v [docs/ROZHRANI.md](docs/ROZHRANI.md), kap. 11.
+- **API:** místo struktur `Options` a `InitOptions` s poli `?T` dostává
+  widget jeden seznam vlastností (`dvui_Prop`); několik vlastností je
+  přejmenovaných (`dir`, `tooltip_scale`, `rect_io`, `resizable`,
+  `label_size`).
+- **Id:** do id vstupuje adresa literálu `"soubor:řádek:čítač"`, který
+  vytvoří `DVUI_SRC` (DVUI hashuje ukazatel na jméno souboru, řádek
+  a sloupec).
+- **Vynecháno:** text a fonty (místo popisku je zástupce s `label_size`,
+  `Font.sizeM` je konstanta 9×12), zaoblené rohy, stíny, gradienty,
+  ninepatch, rotace, ikony, textury a render targety, animace a časovače
+  (kromě `hoverFade`), klávesová navigace a `FocusGroupWidget`, dotyk
+  (jeden capture a jedno tažení), AccessKit, dialogy, toasty, ladicí okno,
+  víc oken OS, část gridu (kurzor, klávesnice, editace, řazení) a widgety
+  z [docs/NEIMPLEMENTOVANO.md](docs/NEIMPLEMENTOVANO.md).
+- **Změněno:** jediné téma (Adwaita Light, nenastavená barva =
+  `{0, 0, 0, 0}`), `Color.lighten` v CIE LCh(uv) místo HSLuv,
+  `dvui_window_end` vrací jen 0 / −1, datové úložiště kontroluje typ jen
+  velikostí.
+- **Paměť:** bez vlastních alokátorů (`malloc`/`free`, vlastní aréna
+  snímku), při nedostatku paměti `abort()`.
+- **Backendy:** zúžené rozhraní (bez textur, schránky, víc oken); SDL 3 GPU
+  maže okno barvou pozadí, má jen bílou texturu 1×1 a 32bitové indexy.
 
 ## Testy
 

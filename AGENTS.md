@@ -59,8 +59,9 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
   → `dvui_place_in`, typy `dvui_BoxWidget`, `dvui_Rect`, výčty `DVUI_EXPAND_BOTH`.
 - U každé portované funkce uveď v komentáři, odkud pochází
   (např. `// DVUI: src/widgets/BoxWidget.zig – rectFor`).
-- Každou vědomou odchylku od DVUI zapiš do sekce „Odchylky od DVUI“
-  v `README.md` příslušného projektu. Neodchyluj se bez důvodu.
+- Každou vědomou odchylku od DVUI zapiš podrobně do `docs/ODCHYLKY.md`
+  a stručně do sekce „Odchylky od DVUI“ v `README.md` příslušného
+  projektu. Neodchyluj se bez důvodu.
 
 ## Styl kódu
 

@@ -292,7 +292,7 @@ void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget* self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-// DVUI: dvui.tooltip – místo textu zástupce o velikosti content_size.
+// DVUI: dvui.tooltip – místo textu zástupce o velikosti label_size.
 void dvui_tooltip_impl(dvui_Src src, dvui_Props props) {
     static const dvui_Prop defaults[] = {DVUI_PADDING_ALL(6), {0}};
     static const dvui_PropTag tags[] = {
