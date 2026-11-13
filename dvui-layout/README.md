@@ -87,8 +87,8 @@ Poznámky k API:
   jsou společné vlastnosti (DVUI `Options`) i vlastnosti widgetu (DVUI
   `InitOptions`). Co v seznamu není, má výchozí hodnotu jako v DVUI.
   Podrobně v [docs/ROZHRANI.md](docs/ROZHRANI.md), kap. 3.
-- `DVUI_SRC` nahrazuje Zig `@src()`; id widgetu vzniká z id rodiče, souboru,
-  řádku, `__COUNTER__` a `id_extra`. Ve smyčce předávejte `DVUI_ID_EXTRA(i)`.
+- `DVUI_SRC` nahrazuje Zig `@src()`; id widgetu vzniká z id rodiče, adresy
+  místa ve zdrojáku (řetězcový literál `"soubor:řádek:čítač"`) a `id_extra`. Ve smyčce předávejte `DVUI_ID_EXTRA(i)`.
   Makra `dvui_box(…)` apod. doplňují `DVUI_SRC` sama.
 - Widget lze vytvořit buď ve vlastní paměti
   (`dvui_box_widget_init(&box, DVUI_SRC, DVUI_PROPS(…))`), nebo „pohodlným“
@@ -162,9 +162,10 @@ datové úložiště a jeho klíče) odpovídá DVUI. Vědomě se liší:
 - Téma: jen jedno (barvy podle Adwaita Light). `Color.lighten` v DVUI mění
   světlost v HSLuv; zde se mění L v CIE LCh(uv) se zachovaným chroma
   (pro šedé barvy je výsledek stejný).
-- Id: DVUI hashuje ukazatel na jméno souboru a sloupec; zde obsah jména
-  souboru, řádek a `__COUNTER__`. Hodnota id 0 znamená „žádné id“
-  (v Zigu `?Id = null`).
+- Id: DVUI hashuje ukazatel na jméno souboru, řádek a sloupec; zde adresu
+  řetězcového literálu `"soubor:řádek:čítač"`, který `DVUI_SRC` vytvoří pro
+  každé místo ve zdrojáku (čítač = `__COUNTER__`, rozliší dvě místa na
+  jednom řádku). Hodnota id 0 znamená „žádné id“ (v Zigu `?Id = null`).
 - Backend SDL 3 GPU maže okno barvou pozadí (výchozí `#f0f0f0`) místo
   `LOADOP_LOAD`; textura je jen bílá 1×1, sampler nearest; indexy 32bitové.
 - `Event.handle` nepíše ladicí log; `refresh` neloguje zdroj.

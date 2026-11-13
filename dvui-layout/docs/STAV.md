@@ -49,11 +49,14 @@ tažení, subwindows).
 Id je `uint64_t` (`dvui_Id`) odvozené při `dvui_widget_data_init`:
 
 ```
-id = hash(id rodiče, soubor, řádek, __COUNTER__, id_extra)
+id = hash(id rodiče, adresa literálu "soubor:řádek:čítač", id_extra)
 ```
 
-`DVUI_SRC` dodá soubor, řádek a `__COUNTER__` místa volání (DVUI `@src()`),
-`id_extra` rozliší víc widgetů ze stejného místa ve zdrojáku (smyčka). Protože
+`DVUI_SRC` (DVUI `@src()`) vytvoří pro každé místo ve zdrojáku jiný
+řetězcový literál a do id vstupuje jeho adresa – stálá po celý běh
+programu, ale jiná v každém běhu (ASLR). Proto id ani pořadí položek
+v mapách nejsou mezi běhy stejné; stav mezi běhy se neukládá, takže to
+nevadí. `id_extra` rozliší víc widgetů ze stejného místa ve zdrojáku (smyčka). Protože
 id obsahuje id rodiče, stejný widget pod jiným rodičem má jiné id – a tedy
 jiný (prázdný) stav.
 

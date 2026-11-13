@@ -29,15 +29,27 @@ extern "C" {
 // DVUI: dvui.zig – Id. Hodnota 0 slouží zároveň jako „žádné id“ (null).
 typedef uint64_t dvui_Id;
 
-// Náhrada za Zig `@src()`. Sloupec nahrazuje `__COUNTER__`, aby dva widgety
-// na jednom řádku dostaly různá id (stejně jako v DVUI díky sloupci).
+// Náhrada za Zig `@src()`.
+//
+// Do id widgetu vstupuje adresa `anchor` – řetězcového literálu
+// "soubor:řádek:čítač", který je pro každé použití DVUI_SRC jiný. Literály
+// s různým obsahem nikdy nezačínají na stejné adrese, takže každé místo ve
+// zdrojáku má po celý běh programu vlastní stálou adresu (DVUI hashuje
+// podobně ukazatel na jméno souboru, řádek a sloupec). `file`, `line`
+// a `column` (hodnota `__COUNTER__`) slouží jen pro chybové hlášky.
 typedef struct dvui_Src {
     const char* file;
     int line;
     int column;
+    const char* anchor;
 } dvui_Src;
 
-#define DVUI_SRC ((dvui_Src){__FILE__, __LINE__, __COUNTER__})
+#define DVUI_STR_(x) #x
+#define DVUI_STR(x) DVUI_STR_(x)
+// __COUNTER__ se smí rozvinout jen jednou, proto pomocná makra.
+#define DVUI_SRC DVUI_SRC_(__COUNTER__)
+#define DVUI_SRC_(c) DVUI_SRC__(c)
+#define DVUI_SRC__(c) ((dvui_Src){__FILE__, __LINE__, (c), __FILE__ ":" DVUI_STR(__LINE__) ":" #c})
 
 // DVUI: Point.zig, Size.zig, Rect.zig. DVUI rozlišuje jednotky typem
 // (logické, Natural, Physical); v C jsou to aliasy stejného typu.

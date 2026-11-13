@@ -215,9 +215,15 @@ Id identifikuje widget mezi snímky – podle něj se hledá min. velikost
 z minula, data, capture i fokus.
 
 ```c
-#define DVUI_SRC ((dvui_Src){__FILE__, __LINE__, __COUNTER__})
-id = hash(id rodiče, soubor, řádek, __COUNTER__, id_extra)
+#define DVUI_SRC  ((dvui_Src){__FILE__, __LINE__, c, __FILE__ ":" "řádek" ":" "c"})   // c = __COUNTER__
+id = hash(id rodiče, adresa literálu "soubor:řádek:c", id_extra)
 ```
+
+`DVUI_SRC` kromě souboru a řádku (pro chybové hlášky) vytvoří řetězcový
+literál `"soubor:řádek:čítač"`, který je pro každé místo ve zdrojáku jiný.
+Do id vstupuje jeho **adresa** (`src.anchor`): literály s různým obsahem
+nikdy nezačínají na stejné adrese a adresa je po celý běh programu stálá.
+DVUI hashuje podobně ukazatel na jméno souboru, řádek a sloupec.
 
 - Každé místo ve zdrojáku dává jiné id; stejné místo volané víckrát (smyčka,
   pomocná funkce) potřebuje různé `id_extra` (`DVUI_ID_EXTRA(i)`).
@@ -225,6 +231,9 @@ id = hash(id rodiče, soubor, řádek, __COUNTER__, id_extra)
   `dvui_id_update(id, "jméno")` – odvození klíče pro data.
 - `init_options.id_override` – vlastní id (např. buňky gridu mají id
   odvozené ze sloupce a řádku).
+- Id se liší mezi běhy programu (ASLR) a mezi moduly (EXE, DLL mají vlastní
+  kopie literálů); v rámci jednoho běhu jsou stálá. Stav mezi běhy se
+  neukládá, takže to nevadí.
 - Id 0 znamená „žádné“ (fokus, capture, cíl události).
 - Duplicitní id v jednom snímku se hlásí na stderr.
 

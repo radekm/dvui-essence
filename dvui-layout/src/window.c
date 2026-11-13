@@ -45,11 +45,10 @@ static uint64_t fnv_update(uint64_t h, const void* data, size_t len) {
 
 dvui_Id dvui_id_extend(dvui_Id start, dvui_Src src, size_t id_extra) {
     uint64_t h = start ? start : fnv_offset;
-    // DVUI hashuje ukazatel na jméno souboru; zde obsah (ukazatele na stejné
-    // řetězce nemusí být v C sloučené).
-    h = fnv_update(h, src.file, strlen(src.file));
-    h = fnv_update(h, &src.line, sizeof src.line);
-    h = fnv_update(h, &src.column, sizeof src.column);
+    // DVUI hashuje ukazatel na jméno souboru, řádek a sloupec; zde adresu
+    // literálu, který je pro každé místo ve zdrojáku jiný (viz DVUI_SRC).
+    const uintptr_t anchor = (uintptr_t)src.anchor;
+    h = fnv_update(h, &anchor, sizeof anchor);
     const uint64_t extra = id_extra;
     h = fnv_update(h, &extra, sizeof extra);
     return h;
@@ -306,11 +305,12 @@ dvui_Window* dvui_window_create(dvui_Backend backend) {
     win->snap_to_pixels = true;
     win->rendering = true;
     win->extra_frames_needed = 1;
+    const dvui_Src src = DVUI_SRC;
     win->wd = (dvui_WidgetData){
-        .id = dvui_id_extend(0, (dvui_Src){"dvui_window", 0, 0}, 0),
+        .id = dvui_id_extend(0, src, 0),
         .init_options = {.subwindow = true},
         .options = dvui_options_with(dvui_options_default(), DVUI_NAME("Window")),
-        .src = {"dvui_window", 0, 0},
+        .src = src,
     };
     win->wd.parent = window_widget(win);
     win->subwindows.focused_id = win->wd.id;

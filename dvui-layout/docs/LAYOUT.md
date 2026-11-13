@@ -160,7 +160,7 @@ Pořadí je u všech widgetů stejné (DVUI `WidgetData.zig`, `Widget.zig`):
 ### 5.1 `init` – `dvui_widget_data_init(src, init_options, opts)`
 
 1. `parent = dvui_parent_get()` – aktuální rodič.
-2. `id = id_override` nebo `hash(id rodiče, soubor, řádek, sloupec, id_extra)`.
+2. `id = id_override` nebo `hash(id rodiče, adresa místa ve zdrojáku, id_extra)` (viz `DVUI_SRC`).
 3. `min_size = pad(min(min_size_content, max_size_content))` – co víme
    o sobě bez dětí.
 4. `ms = max(min_size, min. velikost z minulého snímku)` – pokud widget
