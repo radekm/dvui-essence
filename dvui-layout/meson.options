@@ -1,0 +1,1 @@
+option('sdl3', type: 'feature', value: 'auto', description: 'Backend SDL 3 GPU a demo (vyžaduje SDL 3 v systému)')

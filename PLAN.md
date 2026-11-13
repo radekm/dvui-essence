@@ -48,6 +48,7 @@ dvui-layout/
   meson.build
   include/dvui/dvui.h          veřejné API (typy, Options, Window, widgety)
   include/dvui/backend_sdl3gpu.h
+  include/dvui/backend_testing.h
   src/
     core.c                     Id, Rect, Size, Point, Color, Options, placeIn
     data.c                     hash mapa pro min_sizes a datové úložiště (dataGet/dataSet)
@@ -55,10 +56,11 @@ dvui-layout/
                                focus, dragging, refresh, renderovací fronta
     widget_data.c              WidgetData (init/register/minSize*, borderAndBackground)
     layout.c                   BasicLayout, placeOnScreen
-    widgets/*.c                box, button, overlay, scale, spacer/separator,
-                               scroll_info, scroll_bar, scroll_container,
-                               scroll_area, grid, floating, floating_tooltip,
-                               floating_window, window_header
+    widgets/box.c, button.c, simple.c (spacer, separator, label placeholder,
+                               overlay, scale), scroll_info.c, scroll_bar.c,
+                               scroll_container.c, scroll_area.c, grid.c,
+                               floating.c (floating, tooltip, floating window,
+                               window header)
     backends/sdl3gpu.c         backend nad SDL3 GPU + mapování událostí SDL
     backends/testing.c         backend bez GPU pro testy
   shaders/                     zkompilované shadery převzaté z DVUI
@@ -83,21 +85,21 @@ Mapování DVUI → C:
 | `widgets/ButtonWidget.zig` | `widgets/button.c` |
 | `widgets/ScrollAreaWidget.zig`, `ScrollContainerWidget.zig`, `ScrollBarWidget.zig`, `ScrollInfo.zig` | `widgets/scroll_*.c` |
 | `widgets/GridWidget.zig` | `widgets/grid.c` |
-| `widgets/FloatingWidget.zig`, `FloatingTooltipWidget.zig`, `FloatingWindowWidget.zig` | `widgets/floating*.c` |
-| `widgets/OverlayWidget.zig`, `ScaleWidget.zig` | `widgets/overlay.c`, `widgets/scale.c` |
+| `widgets/FloatingWidget.zig`, `FloatingTooltipWidget.zig`, `FloatingWindowWidget.zig` | `widgets/floating.c` |
+| `widgets/OverlayWidget.zig`, `ScaleWidget.zig`, `LabelWidget.zig` (bez textu) | `widgets/simple.c` |
 | `backends/sdl3gpu.zig` | `backends/sdl3gpu.c` |
 
 ### Fáze
 
 - [x] Fáze 0: snapshot DVUI, AGENTS.md, PLAN.md.
-- [ ] Fáze 1: jádro – geometrie, Options, Id, datové úložiště, Window,
+- [x] Fáze 1: jádro – geometrie, Options, Id, datové úložiště, Window,
       WidgetData, události, capture, subwindows, renderovací fronta.
-- [ ] Fáze 2: backend SDL3 GPU + testovací backend.
-- [ ] Fáze 3: widgety box, button, overlay, scale, spacer.
-- [ ] Fáze 4: scroll info / bar / container / area.
-- [ ] Fáze 5: floating, floating tooltip, floating window + window header.
-- [ ] Fáze 6: grid (vícepruchodový layout).
-- [ ] Fáze 7: demo, testy, dokumentace (README česky), ověření buildu.
+- [x] Fáze 2: backend SDL3 GPU + testovací backend.
+- [x] Fáze 3: widgety box, button, overlay, scale, spacer.
+- [x] Fáze 4: scroll info / bar / container / area.
+- [x] Fáze 5: floating, floating tooltip, floating window + window header.
+- [x] Fáze 6: grid (vícepruchodový layout).
+- [x] Fáze 7: demo, testy, dokumentace (README česky), ověření buildu.
 
 ### Co se z DVUI vědomě vynechává
 
@@ -107,3 +109,12 @@ stíny, gradienty, ninepatch, AccessKit, dialogy a toasty, animace (kromě
 navigace tabulátorem a v gridu, editace a řazení v gridu, témata kromě
 jednoho výchozího (barvy podle Adwaita Light). Podrobnosti v
 `dvui-layout/README.md`, sekce „Odchylky od DVUI“.
+
+### Stav
+
+Hotovo a ověřeno na Linuxu (GCC 13, Clang 18, ASan/UBSan, demo přes Vulkan –
+lavapipe pod Xvfb). Windows a macOS zatím nejsou otestované.
+
+Možné další kroky:
+- Ověřit build na Windows (Clang/MinGW, D3D12) a macOS (Metal).
+- Případně doplnit klávesovou navigaci (tab_index) a kurzor v gridu.

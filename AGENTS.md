@@ -24,7 +24,8 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 
 ## Jazyk a sestavení
 
-- Nový kód se píše v **C23** (`c_std=c23`). Používej jen tu část C23, kterou
+- Nový kód se píše v **C23** (`c_std=c23`; v Mesonu `c23,c2x`, protože GCC 13 zná
+  C23 jen pod starším jménem `c2x`). Používej jen tu část C23, kterou
   podporuje GCC ≥ 13 a Clang ≥ 18 (bool/true/false jako klíčová slova, `nullptr`,
   `static_assert`, `[[nodiscard]]`, `typeof`). Nepoužívej `#embed` (zatím ho
   neumí všechny cílové překladače).
@@ -46,6 +47,7 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
   | SDL 3 | systém | jen backend a demo; jádro layoutu na SDL nezávisí |
 - Předkompilované shadery pro SDL3 GPU jsou převzaté z DVUI
   (`dvui-original/src/backends/sdl3gpu/compiled/`), nejsou to nové závislosti.
+  Do C se vkládají vlastním malým nástrojem `dvui-layout/tools/embed.c`.
 
 ## Věrnost DVUI
 
