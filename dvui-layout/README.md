@@ -18,6 +18,9 @@ port DVUI (commit `2efa35e`, kopie je v `../dvui-original`).
 - [docs/STAV.md](docs/STAV.md) – držení stavu mezi snímky: min. velikosti
   a datové úložiště (hashovací mapy podle id), úklid nepoužitých položek,
   capture, fokus a subwindows, klíče používané widgety.
+- [docs/NEIMPLEMENTOVANO.md](docs/NEIMPLEMENTOVANO.md) – kontejnery z DVUI,
+  které zatím chybí (Paned, FlexBox, Reorder, Tabs, menu, Docking, …): co
+  dělají, jak těžké by bylo je doplnit a co chybí v jádru.
 
 ## Widgety
 
