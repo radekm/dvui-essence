@@ -7,6 +7,15 @@ port DVUI (commit `2efa35e`, kopie je v `../dvui-original`).
 
 ![Demo](docs/demo.png)
 
+## Dokumentace
+
+- [docs/LAYOUT.md](docs/LAYOUT.md) – jak přesně funguje layout: vrstvy obdélníku,
+  co z WidgetData a Options vstupuje do výpočtu, algoritmy jednotlivých
+  kontejnerů (box, scroll, grid, plovoucí okna), konvergence přes více snímků.
+- [docs/ROZHRANI.md](docs/ROZHRANI.md) – základní rozhraní: smyčka snímku,
+  `dvui_Widget` a `WidgetData`, Options, id, události, capture a fokus,
+  datové úložiště, kreslení, backend, správa paměti a příklad vlastního widgetu.
+
 ## Widgety
 
 | Widget | C API | DVUI originál |
@@ -142,6 +151,12 @@ datové úložiště a jeho klíče) odpovídá DVUI. Vědomě se liší:
 - `Event.handle` nepíše ladicí log; `refresh` neloguje zdroj.
 - Kódy kláves a modifikátory: jen ty, které widgety používají
   (Enter/mezerník = „activate“, šipky, PageUp/PageDown, …).
+- Alokátory: DVUI dostává `std.mem.Allocator` (gpa) a používá arénu snímku,
+  LIFO arénu a zásobník widgetů. dvui-layout nepodporuje vlastní alokátory:
+  používá `malloc`/`free` a vlastní arénu snímku; LIFO aréna není potřeba
+  (nekreslí se cesty); widgety z „pohodlných“ funkcí mají každý vlastní
+  `calloc` místo zásobníku. Při nedostatku paměti se volá `abort()`.
+  Podrobně v [docs/ROZHRANI.md](docs/ROZHRANI.md), kap. 11.
 
 ## Testy
 
