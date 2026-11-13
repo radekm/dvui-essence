@@ -13,8 +13,11 @@ port DVUI (commit `2efa35e`, kopie je v `../dvui-original`).
   co z WidgetData a Options vstupuje do výpočtu, algoritmy jednotlivých
   kontejnerů (box, scroll, grid, plovoucí okna), konvergence přes více snímků.
 - [docs/ROZHRANI.md](docs/ROZHRANI.md) – základní rozhraní: smyčka snímku,
-  `dvui_Widget` a `WidgetData`, Options, id, události, capture a fokus,
+  `dvui_Widget` a `WidgetData`, vlastnosti widgetů, id, události, capture a fokus,
   datové úložiště, kreslení, backend, správa paměti a příklad vlastního widgetu.
+- [docs/STAV.md](docs/STAV.md) – držení stavu mezi snímky: min. velikosti
+  a datové úložiště (hashovací mapy podle id), úklid nepoužitých položek,
+  capture, fokus a subwindows, klíče používané widgety.
 
 ## Widgety
 

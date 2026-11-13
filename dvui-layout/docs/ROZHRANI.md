@@ -326,7 +326,8 @@ a puštění tlačítka i mimo svůj obdélník:
 ## 8. Datové úložiště
 
 Widget si mezi snímky pamatuje stav pod klíčem `(id, "jméno")`
-(DVUI `dataGet`/`dataSet`):
+(DVUI `dataGet`/`dataSet`). Jak to funguje uvnitř (mapy, úklid, koš,
+seznam klíčů), popisuje [STAV.md](STAV.md).
 
 | Funkce | Význam |
 |---|---|
