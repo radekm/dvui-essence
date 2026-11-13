@@ -9,7 +9,7 @@ Obsah:
 
 1. [Smyčka snímku (Window)](#1-smyčka-snímku-window)
 2. [Widget a WidgetData](#2-widget-a-widgetdata)
-3. [Options](#3-options)
+3. [Vlastnosti widgetů (seznam značek)](#3-vlastnosti-widgetů-seznam-značek)
 4. [Id a DVUI_SRC](#4-id-a-dvui_src)
 5. [Rodič (parent)](#5-rodič-parent)
 6. [Události](#6-události)
@@ -123,15 +123,15 @@ pro widget (`process_events`, `draw_background`, …):
 
 ```c
 dvui_ButtonWidget bw;
-dvui_button_widget_init(&bw, DVUI_SRC, (dvui_ButtonInitOptions){0}, opts);   // init + register + parent_set
-dvui_button_widget_process_events(&bw);                                       // události
-dvui_button_widget_draw_background(&bw);                                      // kreslení
+dvui_button_widget_init(&bw, DVUI_SRC, DVUI_PROPS(DVUI_GRAYED(true)));  // init + register + parent_set
+dvui_button_widget_process_events(&bw);                                 // události
+dvui_button_widget_draw_background(&bw);                                // kreslení
 /* děti */
-dvui_button_widget_deinit(&bw);                                               // min. velikost + parent_reset
+dvui_button_widget_deinit(&bw);                                         // min. velikost + parent_reset
 ```
 
-„Pohodlné“ funkce (`dvui_box`, `dvui_scroll_area`, `dvui_grid`,
-`dvui_floating_window`, `dvui_overlay`) widget alokují, zavolají `init`
+„Pohodlná“ makra (`dvui_box`, `dvui_scroll_area`, `dvui_grid`,
+`dvui_floating_window`, `dvui_overlay`) doplní `DVUI_SRC`, widget alokují, zavolají `init`
 a obvyklé kroky a vrátí ukazatel; ukončuje se stejným `*_deinit`, který
 paměť uvolní. Funkce, které widget celý vytvoří i ukončí, vracejí výsledek
 přímo: `dvui_button` (kliknuto), `dvui_spacer`/`dvui_separator`/
@@ -141,41 +141,73 @@ přímo: `dvui_button` (kliknuto), `dvui_spacer`/`dvui_separator`/
 Widget ve vlastní paměti se nesmí během snímku přesunout (děti si drží
 ukazatel na rodiče).
 
-## 3. Options
+## 3. Vlastnosti widgetů (seznam značek)
 
-`dvui_Options` (DVUI `Options.zig`) nese vzhled i layout. Každá položka je
-volitelná – nenastavená položka se nepřepisuje a čte se výchozí hodnota.
+Widget dostane **jeden seznam vlastností** (tag list). Každá položka je
+dvojice značka + hodnota (`dvui_Prop`); co v seznamu není, je „nenastaveno“
+a platí výchozí hodnota widgetu. Když je vlastnost v seznamu víckrát, platí
+poslední.
 
 ```c
-(dvui_Options){
-    .expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL),
-    .gravity_y = DVUI_SOME(1.0f),
-    .margin = DVUI_SOME(dvui_rect_all(4)),
-    .min_size_content = DVUI_SOME(((dvui_Size){40, 12})),   // složené literály v závorkách
-    .color_fill = DVUI_SOME(DVUI_RGB(200, 60, 30)),
-    .style = DVUI_SOME(DVUI_STYLE_HIGHLIGHT),
-}
+dvui_BoxWidget* row = dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL), DVUI_MARGIN_ALL(4));
+if (dvui_button(DVUI_LABEL_SIZE(40, 12), DVUI_FILL(DVUI_RGB(200, 60, 30)), DVUI_STYLE(DVUI_STYLE_HIGHLIGHT))) { … }
+dvui_spacer(DVUI_P(min_size_content, s), DVUI_ID_EXTRA(i));   // obecný tvar DVUI_P(jméno, hodnota)
 ```
 
-Volitelná hodnota je struktura `{bool has; T v;}` (`dvui_OptRect`,
-`dvui_OptF32`, …), `DVUI_SOME(x)` ji vyplní. Složený literál jako argument
-`DVUI_SOME` dejte do závorek, jinak se čárky v něm vykládají jako oddělovače
-argumentů makra.
+Vlastnosti jsou dvojího druhu (obojí je ve stejném seznamu):
 
-| Funkce | Význam |
+- **společné** (DVUI `Options`) – rozumí jim všechny widgety: `id_extra`,
+  `name`, `rect`, `expand`, `gravity_x/y`, barvy (`color_fill`,
+  `color_fill_hover`, `color_fill_press`, `color_text*`, `color_border`),
+  `style`, `margin`, `border`, `padding`, `min_size_content`,
+  `max_size_content`, `background`. Po vyhodnocení se uloží do
+  `wd.options` (`dvui_Options`).
+- **vlastnosti widgetu** (DVUI `InitOptions`) – např. `dir` a `equal_space`
+  u boxu, `scroll_info`, `vertical`, `horizontal_bar` u scroll oblasti,
+  `rows` u gridu, `col`/`row` u buňky, `modal`, `open_flag` u okna. Které
+  vlastnosti widget zná, je uvedeno u jeho deklarace v `dvui.h`. Vlastnost,
+  které widget nerozumí, se ohlásí na stderr a ignoruje.
+
+Všechny vlastnosti jsou vyjmenované na jednom místě (X-makra
+`DVUI_OPTION_PROPS` a `DVUI_WIDGET_PROPS` v `dvui.h`) i s typem a obecnou
+výchozí hodnotou. Pro časté vlastnosti jsou zkratky (`DVUI_EXPAND`,
+`DVUI_MARGIN_ALL`, `DVUI_MIN_SIZE(w, h)`, `DVUI_FILL`, `DVUI_DIR`, `DVUI_COL`, …);
+`DVUI_P(jméno, hodnota)` funguje pro každou. Hodnota se kontroluje typem
+pole v unii `dvui_Prop` – pozor jen na implicitní převody čísel
+(`DVUI_P(expand, 0.5f)` projde).
+
+**Vyhodnocení** (`dvui_props_resolve`): obecné výchozí hodnoty → výchozí
+seznam widgetu (`dvui_button_widget_defaults` apod., DVUI `defaults`) →
+seznam uživatele. Výsledkem je `dvui_Options` (společné vlastnosti; maska
+`set` říká, které byly zadány – DVUI `?T != null`) a `dvui_WidgetProps`
+(vlastnosti widgetu; `has[značka]` říká, které byly zadány).
+
+**Předání stylu dál:** značka `DVUI_OPTIONS(&opts)` vloží do seznamu hotové
+`dvui_Options` (přepíše jen zadané položky). Tak widgety skládají vnitřní
+widgety: `DVUI_PROPS(DVUI_OPTIONS(&strip), DVUI_EXPAND(DVUI_EXPAND_BOTH))`.
+
+| Funkce / makro | Význam |
 |---|---|
-| `dvui_options_override(a, b)` | položky nastavené v `b` přepíší `a` (výchozí hodnoty widgetu + uživatel) |
+| `DVUI_PROPS(…)` | seznam jako výraz typu `dvui_Props` (pro `*_widget_init`) |
+| `dvui_options_default()` | Options bez zadaných položek |
+| `dvui_options_with(o, …)` | kopie `o` s aplikovaným seznamem (jen společné vlastnosti) |
+| `dvui_options_has(&o, DVUI_BIT(x))` | byla vlastnost `x` zadána? |
+| `dvui_options_override(a, b)` | položky zadané v `b` přepíší `a` |
 | `dvui_options_strip(o)` | ponechá jen styl a barvy, okraje vynuluje (pro vnitřní pomocné widgety) |
 | `dvui_options_style_only(o)` | jen styl a barvy |
-| `dvui_options_*_get` | hodnota nebo výchozí (`expand`, `gravity`, `margin`, `border`, `padding`, `background`, `style`, `min_size`, `max_size`, …) |
 | `dvui_options_pad_size(o, s)` | `s + padding + border + margin` |
+| `dvui_options_min_size_get`, `…_max_size_get`, `…_gravity_get` | odvozené hodnoty |
 | `dvui_options_color(o, ask)` | barva z Options, jinak z tématu podle `style` |
+| `dvui_props_forward(&wp, tags, out)` | zkopíruje zadané vlastnosti widgetu (předání vnitřnímu widgetu) |
 
-**Barvy:** `color_fill`, `color_fill_hover`, `color_fill_press`,
-`color_text*`, `color_border`. Nenastavené hover/press barvy se odvodí
-z `color_fill` ztmavením (`dvui_theme_adjust_color_for_state`), jinak
-z tématu (`dvui_theme_color`). Styly: `CONTENT` (výchozí), `CONTROL`
-(tlačítka), `WINDOW` (pozadí oken a scroll oblastí), `HIGHLIGHT`, `ERR`.
+Pole `dvui_Options` se čtou přímo (`wd->options.margin`); nezadané pole má
+výchozí hodnotu.
+
+**Barvy:** nezadané hover/press barvy se odvodí ze zadané `color_fill`
+ztmavením (`dvui_theme_adjust_color_for_state`), jinak z tématu
+(`dvui_theme_color`). Styly: `CONTENT` (výchozí), `CONTROL` (tlačítka),
+`WINDOW` (pozadí oken a scroll oblastí), `HIGHLIGHT`, `ERR`. V tématu
+znamená barva `{0, 0, 0, 0}` „nenastaveno“.
 
 ## 4. Id a DVUI_SRC
 
@@ -188,7 +220,7 @@ id = hash(id rodiče, soubor, řádek, __COUNTER__, id_extra)
 ```
 
 - Každé místo ve zdrojáku dává jiné id; stejné místo volané víckrát (smyčka,
-  pomocná funkce) potřebuje různé `options.id_extra`.
+  pomocná funkce) potřebuje různé `id_extra` (`DVUI_ID_EXTRA(i)`).
 - `dvui_id_extend(start, src, id_extra)` – odvození id;
   `dvui_id_update(id, "jméno")` – odvození klíče pro data.
 - `init_options.id_override` – vlastní id (např. buňky gridu mají id
@@ -450,10 +482,13 @@ static void row_min_size_for_child(void* ptr, dvui_Size s) {
 
 static const dvui_WidgetVTable row_vtable = {row_data, row_rect_for, row_screen_rect_scale, row_min_size_for_child};
 
-void row_init(RowWidget* self, dvui_Src src, dvui_Options opts) {
-    const dvui_Options defaults = {.name = "Row", .padding = DVUI_SOME(dvui_rect_all(4)), .background = DVUI_SOME(true)};
+void row_init(RowWidget* self, dvui_Src src, dvui_Props props) {
+    static const dvui_Prop defaults[] = {DVUI_NAME("Row"), DVUI_PADDING_ALL(4), DVUI_BACKGROUND(true), {0}};
+    dvui_Options opts;
+    // bez vlastních vlastností: allowed = NULL, wp = NULL
+    dvui_props_resolve("Row", defaults, props, nullptr, &opts, nullptr);
     *self = (RowWidget){
-        .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, dvui_options_override(defaults, opts)),
+        .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, opts),
         .layout = {.dir = DVUI_HORIZONTAL},
     };
     dvui_widget_data_register(&self->wd);
@@ -471,11 +506,13 @@ void row_deinit(RowWidget* self) {
 Použití – dva spacery 30×10 a 20×15:
 
 ```c
-RowWidget row;
-row_init(&row, DVUI_SRC, (dvui_Options){0});
-dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){30, 10}))});
-dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){20, 15}))});
-row_deinit(&row);
+#define row(self, ...) row_init((self), DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
+
+RowWidget r;
+row(&r);
+dvui_spacer(DVUI_MIN_SIZE(30, 10));
+dvui_spacer(DVUI_MIN_SIZE(20, 15));
+row_deinit(&r);
 ```
 
 | snímek | řádek | druhý spacer | `dvui_window_end` |

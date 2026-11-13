@@ -309,7 +309,7 @@ dvui_Window* dvui_window_create(dvui_Backend backend) {
     win->wd = (dvui_WidgetData){
         .id = dvui_id_extend(0, (dvui_Src){"dvui_window", 0, 0}, 0),
         .init_options = {.subwindow = true},
-        .options = {.name = "Window"},
+        .options = dvui_options_with(dvui_options_default(), DVUI_NAME("Window")),
         .src = {"dvui_window", 0, 0},
     };
     win->wd.parent = window_widget(win);
@@ -1182,7 +1182,7 @@ bool dvui_event_match_simple(dvui_Event* e, dvui_WidgetData* wd) {
 
 bool dvui_clicked(const dvui_WidgetData* wd, dvui_ClickOptions opts) {
     bool click = false;
-    const dvui_RectPhysical click_rect = opts.rect.has ? opts.rect.v : dvui_widget_data_border_rect_scale(wd).r;
+    const dvui_RectPhysical click_rect = opts.rect ? *opts.rect : dvui_widget_data_border_rect_scale(wd).r;
     size_t n;
     dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {

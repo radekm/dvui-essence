@@ -235,7 +235,7 @@ dvui_Sdl3GpuBackend* dvui_sdl3gpu_create(dvui_Sdl3GpuInitOptions options) {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) return nullptr;
 
     dvui_Sdl3GpuBackend* b = calloc(1, sizeof *b);
-    b->clear_color = options.clear_color.has ? options.clear_color.v : DVUI_RGB(0xf0, 0xf0, 0xf0);
+    b->clear_color = options.clear_color ? *options.clear_color : DVUI_RGB(0xf0, 0xf0, 0xf0);
 
     const SDL_WindowFlags flags = SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | (options.hidden ? SDL_WINDOW_HIDDEN : 0);
     b->window = SDL_CreateWindow(options.title ? options.title : "dvui-layout", (int)options.size.w, (int)options.size.h, flags);
@@ -248,9 +248,9 @@ dvui_Sdl3GpuBackend* dvui_sdl3gpu_create(dvui_Sdl3GpuInitOptions options) {
     // přizpůsobení velikosti okna měřítku displeje (DVUI: initial_scale)
     const float scale = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(b->window));
     if (scale > 0 && scale != 1.0f) SDL_SetWindowSize(b->window, (int)(scale * options.size.w), (int)(scale * options.size.h));
-    if (options.min_size.has) {
+    if (options.min_size) {
         const float s = scale > 0 ? scale : 1.0f;
-        SDL_SetWindowMinimumSize(b->window, (int)(s * options.min_size.v.w), (int)(s * options.min_size.v.h));
+        SDL_SetWindowMinimumSize(b->window, (int)(s * options.min_size->w), (int)(s * options.min_size->h));
     }
 
     if (options.no_vsync) {

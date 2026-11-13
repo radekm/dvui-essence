@@ -81,9 +81,8 @@ static int settle(Harness* h, FrameFn frame, void* ctx) {
 
 static dvui_RectPhysical wd_rect(const dvui_WidgetData* wd) { return dvui_widget_data_rect_scale(wd).r; }
 
-static dvui_Options rect_opts(dvui_Size min, dvui_Expand e) {
-    return (dvui_Options){.min_size_content = DVUI_SOME(min), .expand = DVUI_SOME(e)};
-}
+// obdélník dané min. velikosti a roztažení
+#define RECT_PROPS(w, h, e) DVUI_MIN_SIZE((w), (h)), DVUI_EXPAND(e)
 
 // ---------------------------------------------------------------------------
 // placeIn
@@ -122,10 +121,10 @@ typedef struct BoxCtx {
 
 static void frame_vbox(void* p) {
     BoxCtx* ctx = p;
-    dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){0});
-    dvui_WidgetData a = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){30, 10}, DVUI_EXPAND_NONE));
-    dvui_WidgetData bb = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){50, 20}, DVUI_EXPAND_NONE));
-    dvui_WidgetData c = dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){10, 10})), .gravity_x = DVUI_SOME(1.0f)});
+    dvui_BoxWidget* b = dvui_box();
+    dvui_WidgetData a = dvui_spacer(RECT_PROPS(30, 10, DVUI_EXPAND_NONE));
+    dvui_WidgetData bb = dvui_spacer(RECT_PROPS(50, 20, DVUI_EXPAND_NONE));
+    dvui_WidgetData c = dvui_spacer(DVUI_MIN_SIZE(10, 10), DVUI_GRAVITY_X(1.0f));
     ctx->a = wd_rect(&a);
     ctx->b = wd_rect(&bb);
     ctx->c = wd_rect(&c);
@@ -150,10 +149,10 @@ static void test_box_vertical(void) {
 
 static void frame_hbox_expand(void* p) {
     BoxCtx* ctx = p;
-    dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
-    dvui_WidgetData a = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){30, 10}, DVUI_EXPAND_HORIZONTAL));
-    dvui_WidgetData bb = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){50, 20}, DVUI_EXPAND_NONE));
-    dvui_WidgetData c = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){10, 10}, DVUI_EXPAND_BOTH));
+    dvui_BoxWidget* b = dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL));
+    dvui_WidgetData a = dvui_spacer(RECT_PROPS(30, 10, DVUI_EXPAND_HORIZONTAL));
+    dvui_WidgetData bb = dvui_spacer(RECT_PROPS(50, 20, DVUI_EXPAND_NONE));
+    dvui_WidgetData c = dvui_spacer(RECT_PROPS(10, 10, DVUI_EXPAND_BOTH));
     ctx->a = wd_rect(&a);
     ctx->b = wd_rect(&bb);
     ctx->c = wd_rect(&c);
@@ -177,10 +176,10 @@ static void test_box_horizontal_expand(void) {
 
 static void frame_equal_space(void* p) {
     BoxCtx* ctx = p;
-    dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL, .equal_space = true}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
-    dvui_WidgetData a = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){30, 10}, DVUI_EXPAND_NONE));
-    dvui_WidgetData bb = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){50, 20}, DVUI_EXPAND_HORIZONTAL));
-    dvui_WidgetData c = dvui_spacer(DVUI_SRC, rect_opts((dvui_Size){10, 10}, DVUI_EXPAND_NONE));
+    dvui_BoxWidget* b = dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EQUAL_SPACE(true), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL));
+    dvui_WidgetData a = dvui_spacer(RECT_PROPS(30, 10, DVUI_EXPAND_NONE));
+    dvui_WidgetData bb = dvui_spacer(RECT_PROPS(50, 20, DVUI_EXPAND_HORIZONTAL));
+    dvui_WidgetData c = dvui_spacer(RECT_PROPS(10, 10, DVUI_EXPAND_NONE));
     ctx->a = wd_rect(&a);
     ctx->b = wd_rect(&bb);
     ctx->c = wd_rect(&c);
@@ -213,10 +212,10 @@ typedef struct ButtonCtx {
 static void frame_button(void* p) {
     ButtonCtx* ctx = p;
     dvui_ButtonWidget bw;
-    dvui_button_widget_init(&bw, DVUI_SRC, (dvui_ButtonInitOptions){0}, (dvui_Options){0});
+    dvui_button_widget_init(&bw, DVUI_SRC, DVUI_PROPS());
     dvui_button_widget_process_events(&bw);
     dvui_button_widget_draw_background(&bw);
-    dvui_label_placeholder(DVUI_SRC, (dvui_Size){40, 12}, (dvui_Options){.gravity_x = DVUI_SOME(0.5f), .gravity_y = DVUI_SOME(0.5f)});
+    dvui_label_placeholder(DVUI_LABEL_SIZE(40, 12), DVUI_GRAVITY_X(0.5f), DVUI_GRAVITY_Y(0.5f));
     if (dvui_button_widget_clicked(&bw)) ctx->clicks++;
     ctx->hovered = dvui_button_widget_hovered(&bw);
     ctx->rect = dvui_widget_data_border_rect_scale(&bw.wd).r;
@@ -275,10 +274,9 @@ typedef struct ScrollCtx {
 
 static void frame_scroll(void* p) {
     ScrollCtx* ctx = p;
-    dvui_ScrollAreaWidget* sa = dvui_scroll_area(DVUI_SRC, (dvui_ScrollAreaInitOptions){.scroll_info = &ctx->si},
-                                                 (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){100, 100})), .max_size_content = DVUI_SOME(((dvui_Size){100, 100}))});
+    dvui_ScrollAreaWidget* sa = dvui_scroll_area(DVUI_SCROLL_INFO(&ctx->si), DVUI_MIN_SIZE(100, 100), DVUI_MAX_SIZE(100, 100));
     for (size_t i = 0; i < 10; i++) {
-        dvui_WidgetData wd = dvui_spacer(DVUI_SRC, (dvui_Options){.id_extra = DVUI_SOME(i), .min_size_content = DVUI_SOME(((dvui_Size){50, 30}))});
+        dvui_WidgetData wd = dvui_spacer(DVUI_ID_EXTRA(i), DVUI_MIN_SIZE(50, 30));
         if (i == 0) ctx->first = wd_rect(&wd);
         if (i == 9) ctx->last = wd_rect(&wd);
     }
@@ -334,20 +332,19 @@ typedef struct GridCtx {
 
 static void frame_grid(void* p) {
     GridCtx* ctx = p;
-    dvui_GridWidget* g = dvui_grid(DVUI_SRC, (dvui_GridInitOptions){0},
-                                   (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){300, 200})), .border = DVUI_SOME((dvui_Rect){0})});
+    dvui_GridWidget* g = dvui_grid(DVUI_MIN_SIZE(300, 200), DVUI_BORDER_ALL(0));
     for (size_t c = 0; c < 3; c++) {
-        dvui_GridCellWidget* hdr = dvui_grid_widget_col_header(g, (dvui_GridColHeaderInitOptions){.col = c}, (dvui_Options){0});
-        dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){10, 15}))});
+        dvui_GridCellWidget* hdr = dvui_grid_col_header(g, DVUI_COL(c));
+        dvui_spacer(DVUI_MIN_SIZE(10, 15));
         ctx->headers[c] = wd_rect(&hdr->wd);
         dvui_grid_cell_widget_deinit(hdr);
     }
     for (size_t r = 0; r < 3; r++) {
         for (size_t c = 0; c < 3; c++) {
-            dvui_GridCellWidget* cell = dvui_grid_widget_cell(g, (dvui_GridCellOptions){.col = c, .row = r}, (dvui_Options){0});
+            dvui_GridCellWidget* cell = dvui_grid_cell(g, DVUI_COL(c), DVUI_ROW(r));
             // šířka buňky závisí na sloupci i řádku; výška na řádku
             const dvui_Size s = {20.0f + 10.0f * (float)c + 5.0f * (float)r, 10.0f + 4.0f * (float)r};
-            dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(s)});
+            dvui_spacer(DVUI_P(min_size_content, s));
             ctx->cells[r][c] = wd_rect(&cell->wd);
             dvui_grid_cell_widget_deinit(cell);
         }
@@ -390,8 +387,8 @@ typedef struct FwCtx {
 static void frame_fw(void* p) {
     FwCtx* ctx = p;
     if (!ctx->open) return;
-    dvui_FloatingWindowWidget* fw = dvui_floating_window(DVUI_SRC, (dvui_FloatingWindowInitOptions){.open_flag = &ctx->open}, (dvui_Options){0});
-    dvui_WidgetData wd = dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){100, 50}))});
+    dvui_FloatingWindowWidget* fw = dvui_floating_window(DVUI_OPEN_FLAG(&ctx->open));
+    dvui_WidgetData wd = dvui_spacer(DVUI_MIN_SIZE(100, 50));
     ctx->content = wd_rect(&wd);
     ctx->win_rect = wd_rect(&fw->wd);
     dvui_floating_window_widget_deinit(fw);
@@ -441,12 +438,12 @@ typedef struct TtCtx {
 
 static void frame_tt(void* p) {
     TtCtx* ctx = p;
-    dvui_WidgetData wd = dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){50, 20}))});
+    dvui_WidgetData wd = dvui_spacer(DVUI_MIN_SIZE(50, 20));
     dvui_FloatingTooltipWidget tt;
-    dvui_floating_tooltip_widget_init(&tt, DVUI_SRC, (dvui_FloatingTooltipInitOptions){.active_rect = wd_rect(&wd)}, (dvui_Options){0});
+    dvui_floating_tooltip_widget_init(&tt, DVUI_SRC, DVUI_PROPS(DVUI_ACTIVE_RECT(wd_rect(&wd))));
     ctx->shown = dvui_floating_tooltip_widget_shown(&tt);
     if (ctx->shown) {
-        dvui_spacer(DVUI_SRC, (dvui_Options){.min_size_content = DVUI_SOME(((dvui_Size){30, 10}))});
+        dvui_spacer(DVUI_MIN_SIZE(30, 10));
         ctx->tt_rect = wd_rect(&tt.wd);
     }
     dvui_floating_tooltip_widget_deinit(&tt);

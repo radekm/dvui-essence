@@ -2,9 +2,12 @@
 // DVUI: src/widgets/ScrollBarWidget.zig
 #include "../internal.h"
 
-dvui_Options dvui_scroll_bar_widget_defaults = {
-    .name = "ScrollBar",
-    .min_size_content = {.has = true, .v = {10, 10}},
+#include <stdlib.h>
+
+const dvui_Prop dvui_scroll_bar_widget_defaults[] = {
+    DVUI_NAME("ScrollBar"),
+    DVUI_MIN_SIZE(10, 10),
+    {0},
 };
 
 static void process_events(dvui_ScrollBarWidget* self, dvui_RectPhysical grabrs) {
@@ -92,12 +95,20 @@ static void process_events(dvui_ScrollBarWidget* self, dvui_RectPhysical grabrs)
 }
 
 // DVUI: ScrollBarWidget.init
-void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget* self, dvui_Src src, dvui_ScrollBarInitOptions init_opts, dvui_Options opts) {
+void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget* self, dvui_Src src, dvui_Props props) {
+    dvui_Options opts;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("ScrollBar", dvui_scroll_bar_widget_defaults, props,
+                       DVUI_TAGS(DVUI_PROP_scroll_info, DVUI_PROP_dir, DVUI_PROP_focus_id), &opts, &wp);
+    if (!wp.scroll_info) {
+        DVUI_LOG_ERR("ScrollBar: chybí povinná vlastnost scroll_info");
+        abort();
+    }
     *self = (dvui_ScrollBarWidget){
-        .si = init_opts.scroll_info,
-        .focus_id = init_opts.focus_id,
-        .dir = init_opts.direction,
-        .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, dvui_options_override(dvui_scroll_bar_widget_defaults, opts)),
+        .si = wp.scroll_info,
+        .focus_id = wp.focus_id,
+        .dir = wp.dir,
+        .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, opts),
     };
 
     dvui_widget_data_register(&self->wd);

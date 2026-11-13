@@ -53,8 +53,8 @@ z minulého snímku).
 ```c
 #include "dvui/backend_sdl3gpu.h"
 
-dvui_Sdl3GpuBackend *backend = dvui_sdl3gpu_create((dvui_Sdl3GpuInitOptions){.title = "app", .size = {800, 600}});
-dvui_Window *win = dvui_window_create(dvui_sdl3gpu_backend(backend));
+dvui_Sdl3GpuBackend* backend = dvui_sdl3gpu_create((dvui_Sdl3GpuInitOptions){.title = "app", .size = {800, 600}});
+dvui_Window* win = dvui_window_create(dvui_sdl3gpu_backend(backend));
 bool open = true;
 dvui_window_open_flag_set(win, &open);
 
@@ -62,10 +62,8 @@ while (open) {
     dvui_window_begin(win, (int64_t)SDL_GetTicksNS());
     dvui_sdl3gpu_add_all_events(backend, win);
 
-    dvui_BoxWidget *row = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL},
-                                   (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
-    if (dvui_button(DVUI_SRC, (dvui_Size){40, 12}, (dvui_ButtonInitOptions){0},
-                    (dvui_Options){.color_fill = DVUI_SOME(DVUI_RGB(200, 60, 30))})) {
+    dvui_BoxWidget* row = dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL));
+    if (dvui_button(DVUI_LABEL_SIZE(40, 12), DVUI_FILL(DVUI_RGB(200, 60, 30)))) {
         // kliknuto
     }
     dvui_box_widget_deinit(row);
@@ -79,16 +77,17 @@ dvui_sdl3gpu_destroy(backend);
 
 Poznámky k API:
 
+- Widget dostává **jeden seznam vlastností** (značka + hodnota), ve kterém
+  jsou společné vlastnosti (DVUI `Options`) i vlastnosti widgetu (DVUI
+  `InitOptions`). Co v seznamu není, má výchozí hodnotu jako v DVUI.
+  Podrobně v [docs/ROZHRANI.md](docs/ROZHRANI.md), kap. 3.
 - `DVUI_SRC` nahrazuje Zig `@src()`; id widgetu vzniká z id rodiče, souboru,
-  řádku, `__COUNTER__` a `id_extra`. Ve smyčce předávejte `.id_extra`.
-- Volitelné hodnoty z `Options` (Zig `?T`) jsou struktury `{has, v}`;
-  nastavují se makrem `DVUI_SOME(...)`.
-- Volby, které mají v DVUI výchozí hodnotu `true`, jsou v C pojmenované
-  opačně (`no_draw_focus`, `no_container`, `not_resizable`, …), aby nulová
-  inicializace `{0}` odpovídala výchozímu chování DVUI.
-- Widget lze vytvořit buď ve vlastní paměti (`dvui_box_widget_init(&box, …)`),
-  nebo „pohodlnou“ funkcí (`dvui_box(…)`), která ho alokuje; v obou případech
-  se ukončuje `*_deinit`.
+  řádku, `__COUNTER__` a `id_extra`. Ve smyčce předávejte `DVUI_ID_EXTRA(i)`.
+  Makra `dvui_box(…)` apod. doplňují `DVUI_SRC` sama.
+- Widget lze vytvořit buď ve vlastní paměti
+  (`dvui_box_widget_init(&box, DVUI_SRC, DVUI_PROPS(…))`), nebo „pohodlným“
+  makrem (`dvui_box(…)`), které ho alokuje; v obou případech se ukončuje
+  `*_deinit`.
 
 ## Struktura
 
@@ -140,6 +139,20 @@ datové úložiště a jeho klíče) odpovídá DVUI. Vědomě se liší:
 - Render targety a vykreslování do textury.
 
 **Změněno**
+- API vlastností: místo struktur `Options` a `InitOptions` s volitelnými
+  poli (Zig `?T`) dostává widget jeden seznam značek (`dvui_Prop`).
+  Vyhodnocení odpovídá DVUI `defaults.override(opts)`; zadané společné
+  vlastnosti si `dvui_Options` pamatuje v bitové masce `set`. Vlastnosti
+  widgetu z DVUI s výchozí hodnotou `null` mají v interních
+  `*InitOptions` příznak `has_*`. Jména vlastností jsou převzatá z DVUI
+  s výjimkami: `ScrollBarWidget` `direction` → `dir`,
+  `FloatingTooltipWidget` `scale` → `tooltip_scale`,
+  `FloatingWindowWidget` `rect` → `rect_io`, `CellOptions.col_resizable`
+  → `resizable` (jako u hlavičky), velikost popisku/titulku → `label_size`.
+  `GridWidget.InitOptions.scroll_opts` není vnořená struktura – vlastnosti
+  ScrollArea se gridu dávají přímo do jeho seznamu. Cizí vlastnost se
+  ohlásí na stderr.
+- Téma: barva `{0, 0, 0, 0}` znamená „nenastaveno“ (DVUI `?Color = null`).
 - Téma: jen jedno (barvy podle Adwaita Light). `Color.lighten` v DVUI mění
   světlost v HSLuv; zde se mění L v CIE LCh(uv) se zachovaným chroma
   (pro šedé barvy je výsledek stejný).

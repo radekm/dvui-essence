@@ -115,6 +115,9 @@ jednoho výchozího (barvy podle Adwaita Light). Podrobnosti v
 Hotovo a ověřeno na Linuxu (GCC 13, Clang 18, ASan/UBSan, demo přes Vulkan –
 lavapipe pod Xvfb). Windows a macOS zatím nejsou otestované.
 
+API vlastností widgetů je seznam značek (`dvui_Prop`) – jeden seznam pro
+DVUI `Options` i `InitOptions` (viz `dvui-layout/docs/ROZHRANI.md`, kap. 3).
+
 Možné další kroky:
 - Ověřit build na Windows (Clang/MinGW, D3D12) a macOS (Metal).
 - Případně doplnit klávesovou navigaci (tab_index) a kurzor v gridu.

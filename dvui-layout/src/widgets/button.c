@@ -2,12 +2,13 @@
 // DVUI: src/widgets/ButtonWidget.zig, dvui.zig – button
 #include "../internal.h"
 
-dvui_Options dvui_button_widget_defaults = {
-    .name = "Button",
-    .margin = {.has = true, .v = {4, 4, 4, 4}},
-    .padding = {.has = true, .v = {6, 6, 6, 6}},
-    .background = {.has = true, .v = true},
-    .style = {.has = true, .v = DVUI_STYLE_CONTROL},
+const dvui_Prop dvui_button_widget_defaults[] = {
+    DVUI_NAME("Button"),
+    DVUI_MARGIN_ALL(4),
+    DVUI_PADDING_ALL(6),
+    DVUI_BACKGROUND(true),
+    DVUI_STYLE(DVUI_STYLE_CONTROL),
+    {0},
 };
 
 static dvui_WidgetData* button_data(void* ptr) { return &((dvui_ButtonWidget*)ptr)->wd; }
@@ -35,10 +36,14 @@ dvui_Widget dvui_button_widget_widget(dvui_ButtonWidget* self) { return (dvui_Wi
 dvui_WidgetData* dvui_button_widget_data(dvui_ButtonWidget* self) { return &self->wd; }
 
 // DVUI: ButtonWidget.init
-void dvui_button_widget_init(dvui_ButtonWidget* self, dvui_Src src, dvui_ButtonInitOptions init_options, dvui_Options opts) {
-    dvui_Options options = dvui_options_override(dvui_button_widget_defaults, opts);
+void dvui_button_widget_init(dvui_ButtonWidget* self, dvui_Src src, dvui_Props props) {
+    dvui_Options options;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("Button", dvui_button_widget_defaults, props, DVUI_TAGS(DVUI_PROP_draw_focus, DVUI_PROP_grayed), &options, &wp);
+    const dvui_ButtonInitOptions init_options = {.draw_focus = wp.draw_focus, .grayed = wp.grayed};
     if (init_options.grayed) {
-        options.color_text = (dvui_OptColor)DVUI_SOME(dvui_color_average(dvui_options_color(&options, DVUI_COLOR_TEXT), dvui_options_color(&options, DVUI_COLOR_FILL)));
+        options = dvui_options_with(options, DVUI_TEXT_COLOR(dvui_color_average(dvui_options_color(&options, DVUI_COLOR_TEXT),
+                                                                                dvui_options_color(&options, DVUI_COLOR_FILL))));
     }
     *self = (dvui_ButtonWidget){
         .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, options),
@@ -59,11 +64,12 @@ dvui_Options dvui_button_widget_style(dvui_ButtonWidget* self) {
     dvui_Options opts = dvui_options_style_only(*o);
     const float t = dvui_hover_fade(self->wd.id, self->hover);
     if (dvui_captured(self->wd.id)) {
-        opts.color_fill = (dvui_OptColor)DVUI_SOME(dvui_options_color(o, DVUI_COLOR_FILL_PRESS));
-        opts.color_text = (dvui_OptColor)DVUI_SOME(dvui_options_color(o, DVUI_COLOR_TEXT_PRESS));
+        opts = dvui_options_with(opts, DVUI_FILL(dvui_options_color(o, DVUI_COLOR_FILL_PRESS)),
+                                 DVUI_TEXT_COLOR(dvui_options_color(o, DVUI_COLOR_TEXT_PRESS)));
     } else if (t > 0) {
-        opts.color_fill = (dvui_OptColor)DVUI_SOME(dvui_color_lerp(dvui_options_color(o, DVUI_COLOR_FILL), dvui_options_color(o, DVUI_COLOR_FILL_HOVER), t));
-        opts.color_text = (dvui_OptColor)DVUI_SOME(dvui_color_lerp(dvui_options_color(o, DVUI_COLOR_TEXT), dvui_options_color(o, DVUI_COLOR_TEXT_HOVER), t));
+        opts = dvui_options_with(
+            opts, DVUI_FILL(dvui_color_lerp(dvui_options_color(o, DVUI_COLOR_FILL), dvui_options_color(o, DVUI_COLOR_FILL_HOVER), t)),
+            DVUI_TEXT_COLOR(dvui_color_lerp(dvui_options_color(o, DVUI_COLOR_TEXT), dvui_options_color(o, DVUI_COLOR_TEXT_HOVER), t)));
     }
     return opts;
 }
@@ -71,11 +77,13 @@ dvui_Options dvui_button_widget_style(dvui_ButtonWidget* self) {
 // DVUI: ButtonWidget.drawBackground
 void dvui_button_widget_draw_background(dvui_ButtonWidget* self) {
     const dvui_Options style_opt = dvui_button_widget_style(self);
-    dvui_widget_data_border_and_background(&self->wd, (dvui_BorderAndBackgroundOptions){.fill_color = style_opt.color_fill});
+    dvui_widget_data_border_and_background(
+        &self->wd, (dvui_BorderAndBackgroundOptions){
+                       .fill_color = dvui_options_has(&style_opt, DVUI_BIT(color_fill)) ? &style_opt.color_fill : nullptr});
 }
 
 void dvui_button_widget_draw_focus(dvui_ButtonWidget* self) {
-    if (!self->init_options.no_draw_focus && dvui_button_widget_focused(self)) dvui_widget_data_focus_border(&self->wd);
+    if (self->init_options.draw_focus && dvui_button_widget_focused(self)) dvui_widget_data_focus_border(&self->wd);
 }
 
 bool dvui_button_widget_focused(dvui_ButtonWidget* self) { return self->wd.id == dvui_focused_widget_id(); }
@@ -92,10 +100,15 @@ void dvui_button_widget_deinit(dvui_ButtonWidget* self) {
 }
 
 // DVUI: dvui.button – místo LabelWidget je zástupce popisku.
-bool dvui_button(dvui_Src src, dvui_Size label_size, dvui_ButtonInitOptions init_opts, dvui_Options opts) {
+bool dvui_button_impl(dvui_Src src, dvui_Props props) {
+    // Vlastnosti uživatele bez výchozích hodnot tlačítka (DVUI: `opts`).
+    dvui_Options opts;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("button", nullptr, props, DVUI_TAGS(DVUI_PROP_draw_focus, DVUI_PROP_grayed, DVUI_PROP_label_size), &opts, &wp);
+
     // init: dostaneme obdélník od rodiče a staneme se novým rodičem
     dvui_ButtonWidget bw;
-    dvui_button_widget_init(&bw, src, init_opts, opts);
+    dvui_button_widget_init(&bw, src, DVUI_PROPS(DVUI_OPTIONS(&opts), DVUI_DRAW_FOCUS(wp.draw_focus), DVUI_P(grayed, wp.grayed)));
 
     // události (myš a klávesnice)
     dvui_button_widget_process_events(&bw);
@@ -106,9 +119,8 @@ bool dvui_button(dvui_Src src, dvui_Size label_size, dvui_ButtonInitOptions init
     const bool click = dvui_button_widget_clicked(&bw);
 
     // dítě (popisek): dostane obdélník od tlačítka a nahlásí mu min. velikost
-    const dvui_Options label_opts = dvui_options_override(dvui_options_override(dvui_options_strip(opts), dvui_button_widget_style(&bw)),
-                                                          (dvui_Options){.gravity_x = DVUI_SOME(0.5f), .gravity_y = DVUI_SOME(0.5f)});
-    dvui_label_placeholder(DVUI_SRC, label_size, label_opts);
+    const dvui_Options label_opts = dvui_options_override(dvui_options_strip(opts), dvui_button_widget_style(&bw));
+    dvui_label_placeholder(DVUI_OPTIONS(&label_opts), DVUI_GRAVITY_X(0.5f), DVUI_GRAVITY_Y(0.5f), DVUI_P(label_size, wp.label_size));
 
     dvui_button_widget_draw_focus(&bw);
 

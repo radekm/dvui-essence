@@ -18,9 +18,19 @@ dvui_Widget dvui_box_widget_widget(dvui_BoxWidget* self) { return (dvui_Widget){
 dvui_WidgetData* dvui_box_widget_data(dvui_BoxWidget* self) { return &self->wd; }
 
 // DVUI: BoxWidget.init
-void dvui_box_widget_init(dvui_BoxWidget* self, dvui_Src src, dvui_BoxInitOptions init_options, dvui_Options opts) {
-    const dvui_Options defaults = {.name = "Box"};
-    const dvui_WidgetData wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, dvui_options_override(defaults, opts));
+void dvui_box_widget_init(dvui_BoxWidget* self, dvui_Src src, dvui_Props props) {
+    static const dvui_Prop defaults[] = {DVUI_NAME("Box"), {0}};
+    dvui_Options opts;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("Box", defaults, props, DVUI_TAGS(DVUI_PROP_dir, DVUI_PROP_equal_space, DVUI_PROP_num_packed_expanded),
+                       &opts, &wp);
+    const dvui_BoxInitOptions init_options = {
+        .dir = wp.dir,
+        .equal_space = wp.equal_space,
+        .has_num_packed_expanded = wp.has[DVUI_PROP_num_packed_expanded],
+        .num_packed_expanded = wp.num_packed_expanded,
+    };
+    const dvui_WidgetData wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){0}, opts);
     *self = (dvui_BoxWidget){
         .wd = wd,
         .init_opts = init_options,
@@ -214,9 +224,9 @@ void dvui_box_widget_deinit(dvui_BoxWidget* self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-dvui_BoxWidget* dvui_box(dvui_Src src, dvui_BoxInitOptions init_opts, dvui_Options opts) {
+dvui_BoxWidget* dvui_box_impl(dvui_Src src, dvui_Props props) {
     dvui_BoxWidget* ret = dvui_widget_alloc(sizeof *ret);
-    dvui_box_widget_init(ret, src, init_opts, opts);
+    dvui_box_widget_init(ret, src, props);
     dvui_box_widget_draw_background(ret);
     return ret;
 }

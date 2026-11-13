@@ -6,11 +6,12 @@
 #include <stdint.h>
 #include <string.h>
 
-dvui_Options dvui_grid_widget_defaults = {
-    .name = "Grid",
-    .style = {.has = true, .v = DVUI_STYLE_CONTENT},
-    .background = {.has = true, .v = true},
-    .border = {.has = true, .v = {1, 1, 1, 1}},
+const dvui_Prop dvui_grid_widget_defaults[] = {
+    DVUI_NAME("Grid"),
+    DVUI_STYLE(DVUI_STYLE_CONTENT),
+    DVUI_BACKGROUND(true),
+    DVUI_BORDER_ALL(1),
+    {0},
 };
 
 // hlavička sloupce má jako řádek maximum size_t (DVUI: maxInt(usize))
@@ -85,7 +86,7 @@ float dvui_grid_widget_row_height(dvui_GridWidget* self, size_t row) {
             hi = mid;
         }
     }
-    return self->row_height_default->has ? self->row_height_default->v : self->default_min.h;
+    return self->row_height_default->has ? self->row_height_default->height : self->default_min.h;
 }
 
 static void row_offsets_insert(dvui_GridWidget* self, size_t at, dvui_GridRowOffset ro) {
@@ -147,8 +148,18 @@ static void* slice_resize(dvui_Id id, const char* key, size_t elem_size, size_t 
 }
 
 // DVUI: GridWidget.init
-void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts) {
-    const dvui_Options options = dvui_options_override(dvui_grid_widget_defaults, opts);
+void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_Props props) {
+    // Grid rozumí rows, layout_only a všem vlastnostem ScrollArea.
+    dvui_PropTag tags[DVUI_PROP_COUNT];
+    size_t nt = 0;
+    tags[nt++] = DVUI_PROP_rows;
+    tags[nt++] = DVUI_PROP_layout_only;
+    for (const dvui_PropTag* t = dvui_scroll_area_widget_tags; *t != DVUI_PROP_END; t++) tags[nt++] = *t;
+    tags[nt] = DVUI_PROP_END;
+
+    dvui_Options options;
+    dvui_WidgetProps init_opts;
+    dvui_props_resolve("Grid", dvui_grid_widget_defaults, props, tags, &options, &init_opts);
     // DVUI: font.sizeM(4, 1) + padding TextLayoutWidget (6 na každé straně)
     const dvui_Size default_m = dvui_size_pad(dvui_font_size_m(4, 1), dvui_rect_all(6));
 
@@ -161,7 +172,8 @@ void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOpt
         .csi = {.horizontal = DVUI_SCROLL_AUTO, .vertical = DVUI_SCROLL_NONE},
     };
     const dvui_Id id = self->wd.id;
-    self->row_height_default = DVUI_DATA_GET_PTR_DEFAULT(id, "__row_height_default", dvui_OptF32, (dvui_OptF32){0});
+    self->row_height_default = DVUI_DATA_GET_PTR_DEFAULT(id, "__row_height_default", dvui_GridRowHeightDefault,
+                                                        (dvui_GridRowHeightDefault){0});
     self->col_header_height = DVUI_DATA_GET_PTR_DEFAULT(id, "__col_header_height", float, default_m.h);
     self->mouse_mode = DVUI_DATA_GET_PTR_DEFAULT(id, "__mouse_mode", bool, false);
 
@@ -190,8 +202,8 @@ void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOpt
     const size_t* cols = DVUI_DATA_GET(id, "__cols", size_t);
     self->cols = cols ? *cols : 0;
     const size_t* rows = DVUI_DATA_GET(id, "__rows", size_t);
-    self->rows = init_opts.rows.has ? init_opts.rows.v : (rows ? *rows : 0);
-    self->rows_provided = init_opts.rows.has;
+    self->rows_provided = init_opts.has[DVUI_PROP_rows];
+    self->rows = self->rows_provided ? init_opts.rows : (rows ? *rows : 0);
 
     const float def_width = 100.0f;
     self->col_widths = slice_resize(id, "__col_widths", sizeof(float), self->cols, &def_width, &self->col_widths_len);
@@ -212,13 +224,19 @@ void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOpt
     const dvui_ScrollInfo* stored_csi = DVUI_DATA_GET(id, "__csi", dvui_ScrollInfo);
     if (stored_csi) self->csi = *stored_csi;
 
-    dvui_ScrollAreaInitOptions scroll_opts = init_opts.scroll_opts;
-    if (!scroll_opts.frame_viewport_out) scroll_opts.frame_viewport_out = &self->frame_viewport;
-    scroll_opts.no_container = true;
-    dvui_scroll_area_widget_init(&self->scroll, DVUI_SRC, scroll_opts,
-                                 (dvui_Options){.name = "GridScrollArea", .expand = DVUI_SOME(DVUI_EXPAND_BOTH), .background = DVUI_SOME(false)});
+    // vlastnosti ScrollArea od uživatele + vlastní (pozdější vyhrávají)
+    dvui_Point* frame_viewport_out = init_opts.frame_viewport_out ? init_opts.frame_viewport_out : &self->frame_viewport;
+    dvui_Prop scroll_props[DVUI_PROP_COUNT + 8];
+    size_t ns = dvui_props_forward(&init_opts, dvui_scroll_area_widget_tags, scroll_props);
+    scroll_props[ns++] = (dvui_Prop)DVUI_P(frame_viewport_out, frame_viewport_out);
+    scroll_props[ns++] = (dvui_Prop)DVUI_P(container, false);
+    scroll_props[ns++] = (dvui_Prop)DVUI_NAME("GridScrollArea");
+    scroll_props[ns++] = (dvui_Prop)DVUI_EXPAND(DVUI_EXPAND_BOTH);
+    scroll_props[ns++] = (dvui_Prop)DVUI_BACKGROUND(false);
+    scroll_props[ns] = (dvui_Prop){0};
+    dvui_scroll_area_widget_init(&self->scroll, DVUI_SRC, (dvui_Props){scroll_props});
     self->msi = self->scroll.si;
-    self->frame_viewport = *scroll_opts.frame_viewport_out; // jen pokud uživatel předal vlastní
+    self->frame_viewport = *frame_viewport_out; // jen pokud uživatel předal vlastní
 
     // roztažení nebo zmenšení sloupců vodorovně
     bool any_expanded = false;
@@ -325,13 +343,12 @@ dvui_Widget dvui_grid_cell_widget_widget(dvui_GridCellWidget* self) { return (dv
 dvui_WidgetData* dvui_grid_cell_widget_data(dvui_GridCellWidget* self) { return &self->wd; }
 
 static void cell_widget_init(dvui_GridCellWidget* self, dvui_Src src, dvui_GridWidget* grid, size_t col, size_t row, dvui_Options opts) {
-    if (col < grid->cols && dvui_expand_is_horizontal(dvui_options_expand_get(&opts))) grid->col_expands_new[col] = true;
+    if (col < grid->cols && dvui_expand_is_horizontal(opts.expand)) grid->col_expands_new[col] = true;
 
     // expand řídí sloupce/řádky, tady ho vypneme – rect je zadaný
-    dvui_Options local_opts = opts;
-    local_opts.expand = (dvui_OptExpand)DVUI_SOME(DVUI_EXPAND_NONE);
+    const dvui_Options local_opts = dvui_options_with(opts, DVUI_EXPAND(DVUI_EXPAND_NONE));
 
-    const dvui_Options defs = {.name = "Cell"};
+    const dvui_Options defs = dvui_options_with(dvui_options_default(), DVUI_NAME("Cell"));
     *self = (dvui_GridCellWidget){
         .grid = grid,
         .col = col,
@@ -363,7 +380,11 @@ static bool parent_is_scroll_vbox(dvui_GridWidget* self, const char* what) {
 }
 
 // DVUI: GridWidget.colHeader
-dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_GridColHeaderInitOptions init_opts, dvui_Options opts) {
+dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_Props props) {
+    dvui_Options opts;
+    dvui_WidgetProps init_opts;
+    dvui_props_resolve("colHeader", nullptr, props, DVUI_TAGS(DVUI_PROP_col, DVUI_PROP_resizable), &opts, &init_opts);
+
     if (!self->has_cscroll) {
         if (self->has_bscroll) {
             DVUI_LOG_ERR("GridWidget %llx colHeader called after cell", (unsigned long long)self->wd.id);
@@ -371,14 +392,11 @@ dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_Gri
             parent_is_scroll_vbox(self, "column header");
             self->has_cscroll = true;
             dvui_scroll_area_widget_init(&self->cscroll, DVUI_SRC,
-                                         (dvui_ScrollAreaInitOptions){
-                                             .horizontal_bar = DVUI_SCROLL_BAR_HIDE,
-                                             .vertical_bar = DVUI_SCROLL_BAR_HIDE,
-                                             .scroll_info = &self->csi,
-                                             .frame_viewport = DVUI_SOME(((dvui_Point){.x = self->frame_viewport.x})),
-                                             .no_process_events_after = true,
-                                         },
-                                         (dvui_Options){.name = "GridColumnHeaderScroll", .expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
+                                         DVUI_PROPS(DVUI_HORIZONTAL_BAR(DVUI_SCROLL_BAR_HIDE), DVUI_VERTICAL_BAR(DVUI_SCROLL_BAR_HIDE),
+                                                    DVUI_SCROLL_INFO(&self->csi),
+                                                    DVUI_P(frame_viewport, {.x = self->frame_viewport.x}),
+                                                    DVUI_P(process_events_after, false), DVUI_NAME("GridColumnHeaderScroll"),
+                                                    DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL)));
         }
     }
 
@@ -392,12 +410,12 @@ dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_Gri
         .w = dvui_grid_widget_col_width(self, init_opts.col),
         .h = *self->col_header_height,
     };
-    const dvui_Options defs = {.rect = DVUI_SOME(rect), .id_extra = DVUI_SOME(id_extra)};
+    const dvui_Options defs = dvui_options_with(dvui_options_default(), DVUI_RECT(rect), DVUI_ID_EXTRA(id_extra));
     cell_widget_init(&self->cell_widget, DVUI_SRC, self, init_opts.col, HEADER_ROW, dvui_options_override(defs, opts));
 
-    if (init_opts.col < self->col_resizable_len) self->col_resizable[init_opts.col] = !init_opts.not_resizable;
+    if (init_opts.col < self->col_resizable_len) self->col_resizable[init_opts.col] = init_opts.resizable;
 
-    if (!init_opts.not_resizable) {
+    if (init_opts.resizable) {
         // změna šířky sloupce tažením za pravý okraj hlavičky
         dvui_RectScale rs = dvui_widget_data_rect_scale(&self->cell_widget.wd);
         rs.r.x = rs.r.x + rs.r.w - DVUI_GRID_COL_MIN_WIDTH * rs.s;
@@ -454,13 +472,11 @@ static void ensure_body_scroll(dvui_GridWidget* self) {
     if (!self->has_bscroll) {
         parent_is_scroll_vbox(self, "body scrollContainer");
         self->has_bscroll = true;
-        dvui_scroll_container_widget_init(&self->bscroll, DVUI_SRC, self->msi,
-                                          (dvui_ScrollContainerInitOptions){
-                                              .scroll_area = &self->scroll,
-                                              .frame_viewport = DVUI_SOME(self->frame_viewport),
-                                              .event_rect = DVUI_SOME(dvui_widget_data_border_rect_scale(&self->scroll.hbox.wd).r),
-                                          },
-                                          (dvui_Options){.name = "GridBodyScroll", .expand = DVUI_SOME(DVUI_EXPAND_BOTH), .background = DVUI_SOME(false)});
+        dvui_scroll_container_widget_init(&self->bscroll, DVUI_SRC,
+                                          DVUI_PROPS(DVUI_SCROLL_INFO(self->msi), DVUI_P(scroll_area, &self->scroll),
+                                                     DVUI_P(frame_viewport, self->frame_viewport),
+                                                     DVUI_P(event_rect, dvui_widget_data_border_rect_scale(&self->scroll.hbox.wd).r),
+                                                     DVUI_NAME("GridBodyScroll"), DVUI_EXPAND(DVUI_EXPAND_BOTH), DVUI_BACKGROUND(false)));
         dvui_scroll_container_widget_process_events(&self->bscroll);
         // poslední fokus až tady, aby nezahrnoval hlavičky
         self->last_focus = dvui_last_focused_id_in_frame();
@@ -468,7 +484,11 @@ static void ensure_body_scroll(dvui_GridWidget* self) {
 }
 
 // DVUI: GridWidget.cell
-dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_GridCellOptions cell_opts, dvui_Options opts) {
+dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_Props props) {
+    dvui_Options opts;
+    dvui_WidgetProps cell_opts;
+    dvui_props_resolve("cell", nullptr, props, DVUI_TAGS(DVUI_PROP_col, DVUI_PROP_row, DVUI_PROP_resizable), &opts, &cell_opts);
+
     ensure_body_scroll(self);
     if ((ptrdiff_t)cell_opts.col > self->max_seen_col) self->max_seen_col = (ptrdiff_t)cell_opts.col;
     if ((ptrdiff_t)cell_opts.row > self->max_seen_row) self->max_seen_row = (ptrdiff_t)cell_opts.row;
@@ -480,11 +500,11 @@ dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_GridCellO
         .h = dvui_grid_widget_row_height(self, cell_opts.row),
     };
 
-    if (cell_opts.col < self->col_resizable_len) self->col_resizable[cell_opts.col] = !cell_opts.not_col_resizable;
+    if (cell_opts.col < self->col_resizable_len) self->col_resizable[cell_opts.col] = cell_opts.resizable;
 
     const size_t half = sizeof(size_t) * 8 / 2;
     const size_t id_extra = (cell_opts.col << half) | cell_opts.row;
-    const dvui_Options defs = {.rect = DVUI_SOME(rect), .id_extra = DVUI_SOME(id_extra)};
+    const dvui_Options defs = dvui_options_with(dvui_options_default(), DVUI_RECT(rect), DVUI_ID_EXTRA(id_extra));
     cell_widget_init(&self->cell_widget, DVUI_SRC, self, cell_opts.col, cell_opts.row, dvui_options_override(defs, opts));
     return &self->cell_widget;
 }
@@ -504,11 +524,11 @@ void dvui_grid_widget_cell_min_size(dvui_GridWidget* self, size_t col, size_t ro
     }
 
     const float h = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, min_size.h);
-    dvui_OptF32* def = self->row_height_default;
+    dvui_GridRowHeightDefault* def = self->row_height_default;
     if (def->has) {
-        def->v = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, DVUI_MIN(def->v, h));
+        def->height = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, DVUI_MIN(def->height, h));
     } else {
-        *def = (dvui_OptF32){.has = true, .v = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, h)};
+        *def = (dvui_GridRowHeightDefault){.has = true, .height = DVUI_MAX(DVUI_GRID_ROW_MIN_HEIGHT, h)};
     }
 
     dvui_GridRowHeightList* rh = &self->row_heights_auto;
@@ -723,8 +743,8 @@ void dvui_grid_widget_deinit(dvui_GridWidget* self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-dvui_GridWidget* dvui_grid(dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts) {
+dvui_GridWidget* dvui_grid_impl(dvui_Src src, dvui_Props props) {
     dvui_GridWidget* ret = dvui_widget_alloc(sizeof *ret);
-    dvui_grid_widget_init(ret, src, init_opts, opts);
+    dvui_grid_widget_init(ret, src, props);
     return ret;
 }

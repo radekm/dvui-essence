@@ -2,17 +2,29 @@
 // DVUI: src/widgets/ScrollAreaWidget.zig
 #include "../internal.h"
 
-dvui_Options dvui_scroll_area_widget_defaults = {
-    .name = "ScrollAreaWidget",
-    .background = {.has = true, .v = true},
-    .style = {.has = true, .v = DVUI_STYLE_WINDOW},
+const dvui_PropTag dvui_scroll_area_widget_tags[] = {
+    DVUI_PROP_scroll_info,  DVUI_PROP_vertical,           DVUI_PROP_vertical_bar,         DVUI_PROP_horizontal,
+    DVUI_PROP_horizontal_bar, DVUI_PROP_focus_id,         DVUI_PROP_frame_viewport,       DVUI_PROP_frame_viewport_out,
+    DVUI_PROP_lock_visible, DVUI_PROP_process_events_after, DVUI_PROP_container,          DVUI_PROP_user_scroll,
+    DVUI_PROP_END,
+};
+
+const dvui_Prop dvui_scroll_area_widget_defaults[] = {
+    DVUI_NAME("ScrollAreaWidget"),
+    DVUI_BACKGROUND(true),
+    DVUI_STYLE(DVUI_STYLE_WINDOW),
+    {0},
 };
 
 // DVUI: ScrollAreaWidget.init
-void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts) {
+void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvui_Props props) {
     *self = (dvui_ScrollAreaWidget){0};
 
-    dvui_box_widget_init(&self->hbox, src, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, dvui_options_override(dvui_scroll_area_widget_defaults, opts));
+    dvui_Options opts;
+    dvui_WidgetProps init_opts;
+    dvui_props_resolve("ScrollArea", dvui_scroll_area_widget_defaults, props, dvui_scroll_area_widget_tags, &opts, &init_opts);
+
+    dvui_box_widget_init(&self->hbox, src, DVUI_PROPS(DVUI_OPTIONS(&opts), DVUI_DIR(DVUI_HORIZONTAL)));
     const dvui_Id hbox_id = self->hbox.wd.id;
 
     if (init_opts.scroll_info) {
@@ -21,8 +33,8 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvu
         const dvui_ScrollInfo def = dvui_scroll_info_default();
         self->si = dvui_data_get_ptr_default(nullptr, hbox_id, "_scroll_info", sizeof(dvui_ScrollInfo), &def);
         // kód mimo widget mohl změnit směr scrollování
-        self->si->vertical = init_opts.vertical.has ? init_opts.vertical.v : DVUI_SCROLL_AUTO;
-        self->si->horizontal = init_opts.horizontal.has ? init_opts.horizontal.v : DVUI_SCROLL_NONE;
+        self->si->vertical = init_opts.vertical;
+        self->si->horizontal = init_opts.horizontal;
     }
 
     if (init_opts.frame_viewport_out) *init_opts.frame_viewport_out = dvui_rect_top_left(self->si->viewport);
@@ -48,8 +60,9 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvu
         self->si->viewport.h -= inset->h;
     }
 
-    const float bar_w = dvui_options_min_size_get(&dvui_scroll_bar_widget_defaults).w;
-    const float bar_h = dvui_options_min_size_get(&dvui_scroll_bar_widget_defaults).h;
+    const dvui_Options bar_defaults = dvui_options_apply(dvui_options_default(), (dvui_Props){dvui_scroll_bar_widget_defaults});
+    const float bar_w = dvui_options_min_size_get(&bar_defaults).w;
+    const float bar_h = dvui_options_min_size_get(&bar_defaults).h;
 
     // kvůli nepřesnosti float si necháme malou rezervu (0.001)
     bool do_vbar = false;
@@ -82,9 +95,10 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvu
         // posuvníky nejdřív, aby byly vidět i při nedostatku místa
         const bool overlay = init_opts.vertical_bar == DVUI_SCROLL_BAR_AUTO_OVERLAY;
         dvui_ScrollBarWidget vbar;
-        dvui_scroll_bar_widget_init(&vbar, DVUI_SRC, (dvui_ScrollBarInitOptions){.scroll_info = self->si, .focus_id = focus_target},
-                                    dvui_options_override(dvui_options_strip(self->hbox.wd.options),
-                                                          (dvui_Options){.gravity_x = DVUI_SOME(overlay ? 0.999999f : 1.0f), .expand = DVUI_SOME(DVUI_EXPAND_VERTICAL)}));
+        const dvui_Options strip = dvui_options_strip(self->hbox.wd.options);
+        dvui_scroll_bar_widget_init(&vbar, DVUI_SRC,
+                                    DVUI_PROPS(DVUI_SCROLL_INFO(self->si), DVUI_P(focus_id, focus_target), DVUI_OPTIONS(&strip),
+                                               DVUI_GRAVITY_X(overlay ? 0.999999f : 1.0f), DVUI_EXPAND(DVUI_EXPAND_VERTICAL)));
         if (overlay) {
             self->has_vbar_grab = true;
             self->vbar_grab = dvui_scroll_bar_widget_grab(&vbar);
@@ -94,17 +108,19 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvu
         dvui_scroll_bar_widget_deinit(&vbar);
     }
 
-    dvui_box_widget_init(&self->vbox, DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_VERTICAL},
-                         dvui_options_override(dvui_options_strip(self->hbox.wd.options),
-                                               (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH), .name = "ScrollAreaWidget vbox"}));
+    const dvui_Options strip = dvui_options_strip(self->hbox.wd.options);
+    dvui_box_widget_init(&self->vbox, DVUI_SRC,
+                         DVUI_PROPS(DVUI_DIR(DVUI_VERTICAL), DVUI_OPTIONS(&strip), DVUI_EXPAND(DVUI_EXPAND_BOTH),
+                                    DVUI_NAME("ScrollAreaWidget vbox")));
     dvui_box_widget_draw_background(&self->vbox);
 
     if (do_hbar) {
         const bool overlay = init_opts.horizontal_bar == DVUI_SCROLL_BAR_AUTO_OVERLAY;
         dvui_ScrollBarWidget hbar;
-        dvui_scroll_bar_widget_init(&hbar, DVUI_SRC, (dvui_ScrollBarInitOptions){.direction = DVUI_HORIZONTAL, .scroll_info = self->si, .focus_id = focus_target},
-                                    dvui_options_override(dvui_options_strip(self->hbox.wd.options),
-                                                          (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .gravity_y = DVUI_SOME(overlay ? 0.999999f : 1.0f)}));
+        dvui_scroll_bar_widget_init(&hbar, DVUI_SRC,
+                                    DVUI_PROPS(DVUI_DIR(DVUI_HORIZONTAL), DVUI_SCROLL_INFO(self->si), DVUI_P(focus_id, focus_target),
+                                               DVUI_OPTIONS(&strip), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL),
+                                               DVUI_GRAVITY_Y(overlay ? 0.999999f : 1.0f)));
         if (overlay) {
             self->has_hbar_grab = true;
             self->hbar_grab = dvui_scroll_bar_widget_grab(&hbar);
@@ -114,18 +130,21 @@ void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvu
         dvui_scroll_bar_widget_deinit(&hbar);
     }
 
-    if (!init_opts.no_container) {
-        const dvui_Options container_opts = dvui_options_override(dvui_options_strip(self->hbox.wd.options), (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
+    if (init_opts.container) {
         self->has_scroll = true;
-        dvui_scroll_container_widget_init(&self->scroll, DVUI_SRC, self->si,
-                                          (dvui_ScrollContainerInitOptions){
-                                              .scroll_area = self,
-                                              .lock_visible = init_opts.lock_visible,
-                                              .user_scroll = init_opts.user_scroll,
-                                              .frame_viewport = init_opts.frame_viewport,
-                                              .no_process_events_after = init_opts.no_process_events_after,
-                                          },
-                                          container_opts);
+        // frame_viewport předáme jen, když byl zadán (DVUI: ?Point)
+        const dvui_Prop container_props[] = {
+            DVUI_OPTIONS(&strip),
+            DVUI_EXPAND(DVUI_EXPAND_BOTH),
+            DVUI_SCROLL_INFO(self->si),
+            DVUI_P(scroll_area, self),
+            DVUI_P(lock_visible, init_opts.lock_visible),
+            DVUI_P(user_scroll, init_opts.user_scroll),
+            DVUI_P(process_events_after, init_opts.process_events_after),
+            init_opts.has[DVUI_PROP_frame_viewport] ? (dvui_Prop)DVUI_P(frame_viewport, init_opts.frame_viewport) : (dvui_Prop){0},
+            {0},
+        };
+        dvui_scroll_container_widget_init(&self->scroll, DVUI_SRC, (dvui_Props){container_props});
         dvui_scroll_container_widget_process_events(&self->scroll);
     }
 }
@@ -158,8 +177,8 @@ void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget* self) {
     if (allocated) dvui_widget_free(self);
 }
 
-dvui_ScrollAreaWidget* dvui_scroll_area(dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts) {
+dvui_ScrollAreaWidget* dvui_scroll_area_impl(dvui_Src src, dvui_Props props) {
     dvui_ScrollAreaWidget* ret = dvui_widget_alloc(sizeof *ret);
-    dvui_scroll_area_widget_init(ret, src, init_opts, opts);
+    dvui_scroll_area_widget_init(ret, src, props);
     return ret;
 }

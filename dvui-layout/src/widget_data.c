@@ -8,7 +8,7 @@
 // DVUI: WidgetData.init
 dvui_WidgetData dvui_widget_data_init(dvui_Src src, dvui_WidgetDataInitOptions init_options, dvui_Options opts) {
     const dvui_Widget parent = dvui_parent_get();
-    const dvui_Id id = init_options.id_override ? init_options.id_override : dvui_widget_extend_id(parent, src, dvui_options_id_extra(&opts));
+    const dvui_Id id = init_options.id_override ? init_options.id_override : dvui_widget_extend_id(parent, src, opts.id_extra);
 
     const dvui_Options options = opts;
 
@@ -21,10 +21,10 @@ dvui_WidgetData dvui_widget_data_init(dvui_Src src, dvui_WidgetDataInitOptions i
         ms = dvui_size_max(ms, min_last_frame);
     }
 
-    const dvui_Expand expand = dvui_options_expand_get(&options);
+    const dvui_Expand expand = options.expand;
     dvui_Rect rect;
-    if (options.rect.has) {
-        const dvui_Rect r = options.rect.v;
+    if (dvui_options_has(&options, DVUI_BIT(rect))) {
+        const dvui_Rect r = options.rect;
         const dvui_Rect parent_content = dvui_widget_data_content_rect(dvui_widget_data(parent));
         rect = dvui_rect_to_size(r, (dvui_Size){
                                         .w = dvui_expand_is_horizontal(expand) ? parent_content.w : (r.w == 0 ? ms.w : r.w),
@@ -99,8 +99,8 @@ bool dvui_widget_data_visible(const dvui_WidgetData* wd) { return dvui_rect_visi
 void dvui_widget_data_border_and_background(const dvui_WidgetData* wd, dvui_BorderAndBackgroundOptions opts) {
     if (!dvui_widget_data_visible(wd)) return;
 
-    bool bg = dvui_options_background_get(&wd->options);
-    const dvui_Rect b = dvui_options_border_get(&wd->options);
+    bool bg = wd->options.background;
+    const dvui_Rect b = wd->options.border;
 
     if (dvui_rect_non_zero(b)) {
         const bool uniform = b.x == b.y && b.x == b.w && b.x == b.h;
@@ -122,7 +122,7 @@ void dvui_widget_data_border_and_background(const dvui_WidgetData* wd, dvui_Bord
     if (bg) {
         const dvui_RectScale rs = dvui_widget_data_background_rect_scale(wd);
         if (!dvui_rect_empty(rs.r)) {
-            const dvui_Color fill = opts.fill_color.has ? opts.fill_color.v : dvui_options_color(&wd->options, DVUI_COLOR_FILL);
+            const dvui_Color fill = opts.fill_color ? *opts.fill_color : dvui_options_color(&wd->options, DVUI_COLOR_FILL);
             dvui_render_fill_rect(rs.r, fill, false);
         }
     }
@@ -149,7 +149,7 @@ dvui_RectScale dvui_widget_data_rect_scale(const dvui_WidgetData* wd) {
 }
 
 dvui_Rect dvui_widget_data_border_rect(const dvui_WidgetData* wd) {
-    return dvui_rect_inset(wd->rect, dvui_options_margin_get(&wd->options));
+    return dvui_rect_inset(wd->rect, wd->options.margin);
 }
 
 dvui_RectScale dvui_widget_data_border_rect_scale(const dvui_WidgetData* wd) {
@@ -158,7 +158,7 @@ dvui_RectScale dvui_widget_data_border_rect_scale(const dvui_WidgetData* wd) {
 }
 
 dvui_Rect dvui_widget_data_background_rect(const dvui_WidgetData* wd) {
-    return dvui_rect_inset(dvui_rect_inset(wd->rect, dvui_options_margin_get(&wd->options)), dvui_options_border_get(&wd->options));
+    return dvui_rect_inset(dvui_rect_inset(wd->rect, wd->options.margin), wd->options.border);
 }
 
 dvui_RectScale dvui_widget_data_background_rect_scale(const dvui_WidgetData* wd) {
@@ -167,7 +167,7 @@ dvui_RectScale dvui_widget_data_background_rect_scale(const dvui_WidgetData* wd)
 }
 
 dvui_Rect dvui_widget_data_content_rect(const dvui_WidgetData* wd) {
-    return dvui_rect_inset(dvui_widget_data_background_rect(wd), dvui_options_padding_get(&wd->options));
+    return dvui_rect_inset(dvui_widget_data_background_rect(wd), wd->options.padding);
 }
 
 dvui_RectScale dvui_widget_data_content_rect_scale(const dvui_WidgetData* wd) {
@@ -205,7 +205,7 @@ void dvui_widget_data_min_size_set_and_refresh(dvui_WidgetData* wd) {
 
 // DVUI: WidgetData.minSizeReportToParent
 void dvui_widget_data_min_size_report_to_parent(const dvui_WidgetData* wd) {
-    if (!wd->options.rect.has) dvui_widget_min_size_for_child(wd->parent, wd->min_size);
+    if (!dvui_options_has(&wd->options, DVUI_BIT(rect))) dvui_widget_min_size_for_child(wd->parent, wd->min_size);
 }
 
 bool dvui_widget_data_is_root(const dvui_WidgetData* wd) {

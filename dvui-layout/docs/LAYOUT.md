@@ -136,8 +136,9 @@ součet levé a pravé, resp. horní a dolní strany).
 Výchozí hodnoty nenastavených položek: okraje 0, `expand = NONE`,
 gravitace 0, `min_size_content = 0×0`, `max_size_content = 2 000 000`
 (`DVUI_MAX_FLOAT_SAFE`), `background = false`. Každý widget má vlastní
-výchozí Options (`dvui_button_widget_defaults` apod.), na které se uživatelské
-přepíšou přes `dvui_options_override`.
+výchozí seznam vlastností (`dvui_button_widget_defaults` apod.), přes který se
+aplikuje seznam uživatele (`dvui_props_resolve`, DVUI `defaults.override(opts)`).
+Zda byla položka zadána, říká maska `options.set` (např. `rect`).
 
 ### WidgetData (`dvui_WidgetData`)
 
@@ -581,7 +582,7 @@ Umístění:
   Tooltip se ukazuje, dokud je myš nad `active_rect` (nebo nad tooltipem či
   jeho vnořeným tooltipem u `interactive`); stav je v `"_showing"`.
 - **FloatingWindowWidget**:
-  - obdélník je uložený v `"_rect"` (nebo v `init_opts.rect` programu),
+  - obdélník je uložený v `"_rect"` (nebo v `rect_io` programu),
   - **první snímek** se jen uloží a okno má velikost 0 – nekreslí se,
     protože ještě nezná svou velikost,
   - **auto-size** (okno bez zadané velikosti): `rect.w/h = min(max(min. velikost

@@ -3,6 +3,7 @@
 #include "../internal.h"
 
 #include <math.h>
+#include <stdlib.h>
 
 // DVUI: ScrollContainerWidget.scroll_current – řetěz vnořených scroll kontejnerů
 static dvui_ScrollContainerWidget* scroll_current = nullptr;
@@ -15,12 +16,13 @@ dvui_ScrollContainerWidget* dvui_scroll_container_scroll_set(dvui_ScrollContaine
     return ret;
 }
 
-static const dvui_Options defaults = {
-    .name = "ScrollContainer",
+static const dvui_Prop defaults[] = {
+    DVUI_NAME("ScrollContainer"),
     // většinou je uvnitř ScrollArea, která tohle přepíše
-    .background = {.has = true, .v = true},
-    .min_size_content = {.has = true, .v = {5, 5}},
-    .style = {.has = true, .v = DVUI_STYLE_WINDOW},
+    DVUI_BACKGROUND(true),
+    DVUI_MIN_SIZE(5, 5),
+    DVUI_STYLE(DVUI_STYLE_WINDOW),
+    {0},
 };
 
 static dvui_WidgetData* sc_data(void* ptr) { return &((dvui_ScrollContainerWidget*)ptr)->wd; }
@@ -34,8 +36,28 @@ dvui_Widget dvui_scroll_container_widget_widget(dvui_ScrollContainerWidget* self
 dvui_WidgetData* dvui_scroll_container_widget_data(dvui_ScrollContainerWidget* self) { return &self->wd; }
 
 // DVUI: ScrollContainerWidget.init
-void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Src src, dvui_ScrollInfo* io_scroll_info, dvui_ScrollContainerInitOptions init_options, dvui_Options opts) {
-    const dvui_Options options = dvui_options_override(defaults, opts);
+void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Src src, dvui_Props props) {
+    dvui_Options options;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("ScrollContainer", defaults, props,
+                       DVUI_TAGS(DVUI_PROP_scroll_info, DVUI_PROP_scroll_area, DVUI_PROP_frame_viewport, DVUI_PROP_lock_visible,
+                                 DVUI_PROP_event_rect, DVUI_PROP_process_events_after, DVUI_PROP_user_scroll),
+                       &options, &wp);
+    dvui_ScrollInfo* io_scroll_info = wp.scroll_info;
+    if (!io_scroll_info) {
+        DVUI_LOG_ERR("ScrollContainer: chybí povinná vlastnost scroll_info");
+        abort();
+    }
+    const dvui_ScrollContainerInitOptions init_options = {
+        .scroll_area = wp.scroll_area,
+        .has_frame_viewport = wp.has[DVUI_PROP_frame_viewport],
+        .frame_viewport = wp.frame_viewport,
+        .lock_visible = wp.lock_visible,
+        .has_event_rect = wp.has[DVUI_PROP_event_rect],
+        .event_rect = wp.event_rect,
+        .process_events_after = wp.process_events_after,
+        .user_scroll = wp.user_scroll,
+    };
     *self = (dvui_ScrollContainerWidget){
         .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){.no_scroll_when_focused = true}, options),
         .si = io_scroll_info,
@@ -61,7 +83,7 @@ void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Sr
 
     self->prev_clip = dvui_clip(dvui_widget_data_content_rect_scale(&self->wd).r);
 
-    self->frame_viewport = self->init_opts.frame_viewport.has ? self->init_opts.frame_viewport.v : dvui_rect_top_left(self->si->viewport);
+    self->frame_viewport = self->init_opts.has_frame_viewport ? self->init_opts.frame_viewport : dvui_rect_top_left(self->si->viewport);
 
     self->lock_visible = self->init_opts.lock_visible;
     if (self->lock_visible) {
@@ -84,14 +106,14 @@ void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Sr
 }
 
 bool dvui_scroll_container_widget_match_event(dvui_ScrollContainerWidget* self, dvui_Event* e) {
-    const dvui_RectPhysical r = self->init_opts.event_rect.has ? self->init_opts.event_rect.v : dvui_widget_data_border_rect_scale(&self->wd).r;
+    const dvui_RectPhysical r = self->init_opts.has_event_rect ? self->init_opts.event_rect : dvui_widget_data_border_rect_scale(&self->wd).r;
     return dvui_event_match(e, (dvui_EventMatchOptions){.id = self->wd.id, .r = r});
 }
 
 // DVUI: ScrollContainerWidget.processEvents (zpracování doteků zde odpadá)
 void dvui_scroll_container_widget_process_events(dvui_ScrollContainerWidget* self) {
     // mohlo se změnit událostmi
-    self->frame_viewport = self->init_opts.frame_viewport.has ? self->init_opts.frame_viewport.v : dvui_rect_top_left(self->si->viewport);
+    self->frame_viewport = self->init_opts.has_frame_viewport ? self->init_opts.frame_viewport : dvui_rect_top_left(self->si->viewport);
 }
 
 // DVUI: ScrollContainerWidget.processVelocityAfter
@@ -335,7 +357,7 @@ void dvui_scroll_container_widget_process_scroll_to(dvui_ScrollContainerWidget* 
 // DVUI: ScrollContainerWidget.processEventsAfter
 void dvui_scroll_container_widget_process_events_after(dvui_ScrollContainerWidget* self) {
     const dvui_Id focus_id = dvui_last_focused_id_in_frame_since(self->last_focus);
-    const dvui_RectPhysical r = self->init_opts.event_rect.has ? self->init_opts.event_rect.v : dvui_widget_data_border_rect_scale(&self->wd).r;
+    const dvui_RectPhysical r = self->init_opts.has_event_rect ? self->init_opts.event_rect : dvui_widget_data_border_rect_scale(&self->wd).r;
     size_t n;
     dvui_Event* evts = dvui_events(&n);
     for (size_t i = 0; i < n; i++) {
@@ -427,7 +449,7 @@ void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget* self) {
     // clip obnovíme před processEventsAfter – event_rect může být mimo clip
     dvui_clip_set(self->prev_clip);
 
-    if (!self->init_opts.no_process_events_after) {
+    if (self->init_opts.process_events_after) {
         dvui_scroll_container_widget_process_events_after(self);
         dvui_scroll_container_widget_process_velocity_after(self);
     }

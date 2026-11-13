@@ -12,6 +12,10 @@
 #define DVUI_LOG_ERR(...) (fprintf(stderr, "dvui error: " __VA_ARGS__), fputc('\n', stderr))
 #define DVUI_LOG_DEBUG(...) ((void)0)
 
+// Seznam značek, kterým widget rozumí (pro dvui_props_resolve):
+//     DVUI_TAGS(DVUI_PROP_dir, DVUI_PROP_equal_space)
+#define DVUI_TAGS(...) ((const dvui_PropTag[]){__VA_ARGS__ __VA_OPT__(, ) DVUI_PROP_END})
+
 #define DVUI_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define DVUI_MAX(a, b) ((a) > (b) ? (a) : (b))
 

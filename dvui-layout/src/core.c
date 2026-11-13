@@ -212,32 +212,32 @@ dvui_Theme dvui_theme_adwaita_light(void) {
         .dark = false,
         .focus = accent,
         .fill = white,
-        .fill_hover = DVUI_SOME(dvui_color_from_lightness(82)),
-        .fill_press = DVUI_SOME(dvui_color_from_lightness(72)),
+        .fill_hover = dvui_color_from_lightness(82),
+        .fill_press = dvui_color_from_lightness(72),
         .text = DVUI_RGB(0, 0, 0),
         .text_select = DVUI_RGB(0x91, 0xbc, 0xf0),
         .border = dvui_color_from_lightness(63),
         .control = {
-            .fill = DVUI_SOME(DVUI_RGB(0xe0, 0xe0, 0xe0)),
-            .fill_hover = DVUI_SOME(dvui_color_from_lightness(82)),
-            .fill_press = DVUI_SOME(dvui_color_from_lightness(72)),
+            .fill = DVUI_RGB(0xe0, 0xe0, 0xe0),
+            .fill_hover = dvui_color_from_lightness(82),
+            .fill_press = dvui_color_from_lightness(72),
         },
         .window = {
-            .fill = DVUI_SOME(DVUI_RGB(0xf0, 0xf0, 0xf0)),
+            .fill = DVUI_RGB(0xf0, 0xf0, 0xf0),
         },
         .highlight = {
-            .fill = DVUI_SOME(accent),
-            .fill_hover = DVUI_SOME(dvui_color_lighten(accent, -11)),
-            .fill_press = DVUI_SOME(dvui_color_lighten(accent, -16)),
-            .text = DVUI_SOME(white),
-            .border = DVUI_SOME(dvui_color_lighten(accent, -22)),
+            .fill = accent,
+            .fill_hover = dvui_color_lighten(accent, -11),
+            .fill_press = dvui_color_lighten(accent, -16),
+            .text = white,
+            .border = dvui_color_lighten(accent, -22),
         },
         .err = {
-            .fill = DVUI_SOME(err),
-            .fill_hover = DVUI_SOME(dvui_color_lighten(err, -10)),
-            .fill_press = DVUI_SOME(dvui_color_lighten(err, -15)),
-            .text = DVUI_SOME(white),
-            .border = DVUI_SOME(dvui_color_lighten(err, -20)),
+            .fill = err,
+            .fill_hover = dvui_color_lighten(err, -10),
+            .fill_press = dvui_color_lighten(err, -15),
+            .text = white,
+            .border = dvui_color_lighten(err, -20),
         },
     };
 }
@@ -260,12 +260,12 @@ dvui_Color dvui_theme_color(const dvui_Theme* t, dvui_StyleName style, dvui_Colo
         case DVUI_COLOR_BORDER: return t->border;
         case DVUI_COLOR_FILL: return dvui_theme_adjust_color_for_state(t, t->fill, ask);
         case DVUI_COLOR_FILL_HOVER:
-            return t->fill_hover.has ? t->fill_hover.v : dvui_theme_adjust_color_for_state(t, t->fill, ask);
+            return dvui_color_is_set(t->fill_hover) ? t->fill_hover : dvui_theme_adjust_color_for_state(t, t->fill, ask);
         case DVUI_COLOR_FILL_PRESS:
-            return t->fill_press.has ? t->fill_press.v : dvui_theme_adjust_color_for_state(t, t->fill, ask);
+            return dvui_color_is_set(t->fill_press) ? t->fill_press : dvui_theme_adjust_color_for_state(t, t->fill, ask);
         case DVUI_COLOR_TEXT: return t->text;
-        case DVUI_COLOR_TEXT_HOVER: return t->text_hover.has ? t->text_hover.v : t->text;
-        case DVUI_COLOR_TEXT_PRESS: return t->text_press.has ? t->text_press.v : t->text;
+        case DVUI_COLOR_TEXT_HOVER: return dvui_color_is_set(t->text_hover) ? t->text_hover : t->text;
+        case DVUI_COLOR_TEXT_PRESS: return dvui_color_is_set(t->text_press) ? t->text_press : t->text;
         }
         return t->fill;
     case DVUI_STYLE_CONTROL: cs = &t->control; break;
@@ -275,25 +275,25 @@ dvui_Color dvui_theme_color(const dvui_Theme* t, dvui_StyleName style, dvui_Colo
     }
 
     switch (ask) {
-    case DVUI_COLOR_BORDER: return cs->border.has ? cs->border.v : dvui_theme_color(t, DVUI_STYLE_CONTENT, ask);
+    case DVUI_COLOR_BORDER: return dvui_color_is_set(cs->border) ? cs->border : dvui_theme_color(t, DVUI_STYLE_CONTENT, ask);
     case DVUI_COLOR_FILL_HOVER:
-        if (cs->fill_hover.has) return cs->fill_hover.v;
+        if (dvui_color_is_set(cs->fill_hover)) return cs->fill_hover;
         goto fill;
     case DVUI_COLOR_FILL_PRESS:
-        if (cs->fill_press.has) return cs->fill_press.v;
+        if (dvui_color_is_set(cs->fill_press)) return cs->fill_press;
         goto fill;
     case DVUI_COLOR_FILL:
     fill:
-        return cs->fill.has ? dvui_theme_adjust_color_for_state(t, cs->fill.v, ask) : dvui_theme_color(t, DVUI_STYLE_CONTENT, ask);
+        return dvui_color_is_set(cs->fill) ? dvui_theme_adjust_color_for_state(t, cs->fill, ask) : dvui_theme_color(t, DVUI_STYLE_CONTENT, ask);
     case DVUI_COLOR_TEXT_HOVER:
-        if (cs->text_hover.has) return cs->text_hover.v;
+        if (dvui_color_is_set(cs->text_hover)) return cs->text_hover;
         goto text;
     case DVUI_COLOR_TEXT_PRESS:
-        if (cs->text_press.has) return cs->text_press.v;
+        if (dvui_color_is_set(cs->text_press)) return cs->text_press;
         goto text;
     case DVUI_COLOR_TEXT:
     text:
-        return cs->text.has ? cs->text.v : dvui_theme_color(t, DVUI_STYLE_CONTENT, ask);
+        return dvui_color_is_set(cs->text) ? cs->text : dvui_theme_color(t, DVUI_STYLE_CONTENT, ask);
     }
     return t->fill;
 }
@@ -311,127 +311,198 @@ dvui_Size dvui_font_size_m(float wide, float tall) {
 bool dvui_expand_is_horizontal(dvui_Expand e) { return e == DVUI_EXPAND_HORIZONTAL || e == DVUI_EXPAND_BOTH; }
 bool dvui_expand_is_vertical(dvui_Expand e) { return e == DVUI_EXPAND_VERTICAL || e == DVUI_EXPAND_BOTH; }
 
+bool dvui_color_is_set(dvui_Color c) { return c.r != 0 || c.g != 0 || c.b != 0 || c.a != 0; }
+
+// --- Seznam vlastností
+
+static_assert(DVUI_PROP_OPTIONS_COUNT_ <= 32, "bity společných vlastností se musí vejít do dvui_Options.set");
+
+static const char* const prop_names[DVUI_PROP_COUNT] = {
+    [DVUI_PROP_END] = "(konec)",
+#define DVUI_X(name, type, def) [DVUI_PROP_##name] = #name,
+    DVUI_OPTION_PROPS(DVUI_X) DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+};
+
+dvui_Options dvui_options_default(void) {
+    return (dvui_Options){
+#define DVUI_X(name, type, def) .name = def,
+        DVUI_OPTION_PROPS(DVUI_X)
+#undef DVUI_X
+        .set = 0,
+    };
+}
+
+bool dvui_options_has(const dvui_Options* o, uint32_t bits) { return (o->set & bits) != 0; }
+
+// Aplikuje jednu položku na Options; vrací false, pokud nejde o společnou
+// vlastnost (ani o vložené Options).
+static bool options_apply_one(dvui_Options* o, const dvui_Prop* p) {
+    switch (p->tag) {
+#define DVUI_X(name, type, def)    \
+    case DVUI_PROP_##name:         \
+        o->name = p->name;         \
+        o->set |= DVUI_BIT(name);  \
+        return true;
+        DVUI_OPTION_PROPS(DVUI_X)
+#undef DVUI_X
+    case DVUI_PROP_options:
+        if (p->options) *o = dvui_options_override(*o, *p->options);
+        return true;
+    default: return false;
+    }
+}
+
+dvui_Options dvui_options_apply(dvui_Options self, dvui_Props props) {
+    for (const dvui_Prop* p = props.items; p && p->tag != DVUI_PROP_END; p++) options_apply_one(&self, p);
+    return self;
+}
+
+static bool tag_allowed(const dvui_PropTag* allowed, dvui_PropTag tag) {
+    for (const dvui_PropTag* a = allowed; a && *a != DVUI_PROP_END; a++) {
+        if (*a == tag) return true;
+    }
+    return false;
+}
+
+static void props_resolve_list(const char* widget, const dvui_Prop* p, const dvui_PropTag* allowed, dvui_Options* opts,
+                               dvui_WidgetProps* wp) {
+    for (; p && p->tag != DVUI_PROP_END; p++) {
+        if (options_apply_one(opts, p)) continue;
+        if ((unsigned)p->tag >= DVUI_PROP_COUNT || wp == nullptr || !tag_allowed(allowed, p->tag)) {
+            DVUI_LOG_ERR("%s: neznámá vlastnost %s", widget,
+                         (unsigned)p->tag < DVUI_PROP_COUNT ? prop_names[p->tag] : "(neplatná značka)");
+            continue;
+        }
+        switch (p->tag) {
+#define DVUI_X(name, type, def) \
+    case DVUI_PROP_##name: wp->name = p->name; break;
+            DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+        default: break;
+        }
+        wp->has[p->tag] = true;
+    }
+}
+
+void dvui_props_resolve(const char* widget, const dvui_Prop* defaults, dvui_Props props, const dvui_PropTag* allowed,
+                        dvui_Options* opts, dvui_WidgetProps* wp) {
+    *opts = dvui_options_default();
+    if (wp) {
+        *wp = (dvui_WidgetProps){
+#define DVUI_X(name, type, def) .name = def,
+            DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+        };
+    }
+    props_resolve_list(widget, defaults, allowed, opts, wp);
+    props_resolve_list(widget, props.items, allowed, opts, wp);
+}
+
+size_t dvui_props_forward(const dvui_WidgetProps* wp, const dvui_PropTag* tags, dvui_Prop* out) {
+    size_t n = 0;
+    for (const dvui_PropTag* t = tags; t && *t != DVUI_PROP_END; t++) {
+        if ((unsigned)*t >= DVUI_PROP_COUNT || !wp->has[*t]) continue;
+        dvui_Prop p = {.tag = *t};
+        switch (*t) {
+#define DVUI_X(name, type, def) \
+    case DVUI_PROP_##name: p.name = wp->name; break;
+            DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+        default: continue; // společné vlastnosti WidgetProps nenese
+        }
+        out[n++] = p;
+    }
+    return n;
+}
+
+// --- Options
+
 dvui_Options dvui_options_override(dvui_Options self, dvui_Options over) {
     dvui_Options ret = self;
-#define OVR(f) \
-    if (over.f.has) ret.f = over.f
-    OVR(id_extra);
-    if (over.name) ret.name = over.name;
-    OVR(rect);
-    OVR(expand);
-    OVR(gravity_x);
-    OVR(gravity_y);
-    OVR(color_fill);
-    OVR(color_fill_hover);
-    OVR(color_fill_press);
-    OVR(color_text);
-    OVR(color_text_hover);
-    OVR(color_text_press);
-    OVR(color_border);
-    OVR(style);
-    OVR(margin);
-    OVR(border);
-    OVR(padding);
-    OVR(min_size_content);
-    OVR(max_size_content);
-    OVR(background);
-#undef OVR
+#define DVUI_X(name, type, def) \
+    if (over.set & DVUI_BIT(name)) ret.name = over.name;
+    DVUI_OPTION_PROPS(DVUI_X)
+#undef DVUI_X
+    ret.set |= over.set;
+    return ret;
+}
+
+// Bity vlastností, které strip i styleOnly zachovávají.
+static const uint32_t style_bits = DVUI_BIT(style) | DVUI_BIT(color_fill) | DVUI_BIT(color_fill_hover) |
+                                   DVUI_BIT(color_fill_press) | DVUI_BIT(color_text) | DVUI_BIT(color_text_hover) |
+                                   DVUI_BIT(color_text_press) | DVUI_BIT(color_border);
+
+static dvui_Options options_keep_style(dvui_Options self) {
+    dvui_Options ret = dvui_options_default();
+    ret.style = self.style;
+    ret.color_fill = self.color_fill;
+    ret.color_fill_hover = self.color_fill_hover;
+    ret.color_fill_press = self.color_fill_press;
+    ret.color_text = self.color_text;
+    ret.color_text_hover = self.color_text_hover;
+    ret.color_text_press = self.color_text_press;
+    ret.color_border = self.color_border;
+    ret.set = self.set & style_bits;
     return ret;
 }
 
 dvui_Options dvui_options_strip(dvui_Options self) {
-    return (dvui_Options){
-        .margin = DVUI_SOME((dvui_Rect){0}),
-        .border = DVUI_SOME((dvui_Rect){0}),
-        .padding = DVUI_SOME((dvui_Rect){0}),
-        .background = DVUI_SOME(false),
-
-        // zbytek ponecháme
-        .style = self.style,
-        .color_fill = self.color_fill,
-        .color_fill_hover = self.color_fill_hover,
-        .color_fill_press = self.color_fill_press,
-        .color_text = self.color_text,
-        .color_text_hover = self.color_text_hover,
-        .color_text_press = self.color_text_press,
-        .color_border = self.color_border,
-    };
+    dvui_Options ret = options_keep_style(self);
+    // DVUI: margin, border, padding a background jsou explicitně nastavené
+    // (přebijí výchozí hodnoty vnitřních widgetů).
+    ret.margin = (dvui_Rect){0};
+    ret.border = (dvui_Rect){0};
+    ret.padding = (dvui_Rect){0};
+    ret.background = false;
+    ret.set |= DVUI_BIT(margin) | DVUI_BIT(border) | DVUI_BIT(padding) | DVUI_BIT(background);
+    return ret;
 }
 
-dvui_Options dvui_options_style_only(dvui_Options self) {
-    return (dvui_Options){
-        .style = self.style,
-        .color_fill = self.color_fill,
-        .color_fill_hover = self.color_fill_hover,
-        .color_fill_press = self.color_fill_press,
-        .color_text = self.color_text,
-        .color_text_hover = self.color_text_hover,
-        .color_text_press = self.color_text_press,
-        .color_border = self.color_border,
-    };
-}
+dvui_Options dvui_options_style_only(dvui_Options self) { return options_keep_style(self); }
 
-size_t dvui_options_id_extra(const dvui_Options* o) { return o->id_extra.has ? o->id_extra.v : 0; }
-dvui_Expand dvui_options_expand_get(const dvui_Options* o) { return o->expand.has ? o->expand.v : DVUI_EXPAND_NONE; }
-dvui_Gravity dvui_options_gravity_get(const dvui_Options* o) {
-    return (dvui_Gravity){o->gravity_x.has ? o->gravity_x.v : 0.0f, o->gravity_y.has ? o->gravity_y.v : 0.0f};
-}
-dvui_Rect dvui_options_margin_get(const dvui_Options* o) { return o->margin.has ? o->margin.v : (dvui_Rect){0}; }
-dvui_Rect dvui_options_border_get(const dvui_Options* o) { return o->border.has ? o->border.v : (dvui_Rect){0}; }
-dvui_Rect dvui_options_padding_get(const dvui_Options* o) { return o->padding.has ? o->padding.v : (dvui_Rect){0}; }
-bool dvui_options_background_get(const dvui_Options* o) { return o->background.has ? o->background.v : false; }
-dvui_StyleName dvui_options_style_get(const dvui_Options* o) { return o->style.has ? o->style.v : DVUI_STYLE_CONTENT; }
+dvui_Gravity dvui_options_gravity_get(const dvui_Options* o) { return (dvui_Gravity){o->gravity_x, o->gravity_y}; }
 
 dvui_Size dvui_options_pad_size(const dvui_Options* o, dvui_Size s) {
-    return dvui_size_pad(dvui_size_pad(dvui_size_pad(s, dvui_options_padding_get(o)), dvui_options_border_get(o)), dvui_options_margin_get(o));
-}
-
-dvui_Size dvui_options_min_size_content_get(const dvui_Options* o) {
-    return o->min_size_content.has ? o->min_size_content.v : (dvui_Size){0};
-}
-
-dvui_Size dvui_options_max_size_content_get(const dvui_Options* o) {
-    return o->max_size_content.has ? o->max_size_content.v : dvui_size_all(DVUI_MAX_FLOAT_SAFE);
+    return dvui_size_pad(dvui_size_pad(dvui_size_pad(s, o->padding), o->border), o->margin);
 }
 
 dvui_Size dvui_options_min_size_get(const dvui_Options* o) {
-    return dvui_options_pad_size(o, dvui_size_min(dvui_options_min_size_content_get(o), dvui_options_max_size_content_get(o)));
+    return dvui_options_pad_size(o, dvui_size_min(o->min_size_content, o->max_size_content));
 }
 
-dvui_Size dvui_options_max_size_get(const dvui_Options* o) {
-    return dvui_options_pad_size(o, dvui_options_max_size_content_get(o));
-}
+dvui_Size dvui_options_max_size_get(const dvui_Options* o) { return dvui_options_pad_size(o, o->max_size_content); }
 
 dvui_Color dvui_options_color(const dvui_Options* o, dvui_ColorAsk ask) {
     const dvui_Theme* t = dvui_theme_get();
     switch (ask) {
     case DVUI_COLOR_BORDER:
-        if (o->color_border.has) return o->color_border.v;
+        if (dvui_options_has(o, DVUI_BIT(color_border))) return o->color_border;
         break;
     case DVUI_COLOR_FILL:
-        if (o->color_fill.has) return o->color_fill.v;
+        if (dvui_options_has(o, DVUI_BIT(color_fill))) return o->color_fill;
         break;
     case DVUI_COLOR_FILL_HOVER:
-        if (o->color_fill_hover.has) return o->color_fill_hover.v;
-        if (o->color_fill.has) return dvui_theme_adjust_color_for_state(t, o->color_fill.v, ask);
+        if (dvui_options_has(o, DVUI_BIT(color_fill_hover))) return o->color_fill_hover;
+        if (dvui_options_has(o, DVUI_BIT(color_fill))) return dvui_theme_adjust_color_for_state(t, o->color_fill, ask);
         break;
     case DVUI_COLOR_FILL_PRESS:
-        if (o->color_fill_press.has) return o->color_fill_press.v;
-        if (o->color_fill.has) return dvui_theme_adjust_color_for_state(t, o->color_fill.v, ask);
+        if (dvui_options_has(o, DVUI_BIT(color_fill_press))) return o->color_fill_press;
+        if (dvui_options_has(o, DVUI_BIT(color_fill))) return dvui_theme_adjust_color_for_state(t, o->color_fill, ask);
         break;
     case DVUI_COLOR_TEXT:
-        if (o->color_text.has) return o->color_text.v;
+        if (dvui_options_has(o, DVUI_BIT(color_text))) return o->color_text;
         break;
     case DVUI_COLOR_TEXT_HOVER:
-        if (o->color_text_hover.has) return o->color_text_hover.v;
-        if (o->color_text.has) return dvui_theme_adjust_color_for_state(t, o->color_text.v, ask);
+        if (dvui_options_has(o, DVUI_BIT(color_text_hover))) return o->color_text_hover;
+        if (dvui_options_has(o, DVUI_BIT(color_text))) return dvui_theme_adjust_color_for_state(t, o->color_text, ask);
         break;
     case DVUI_COLOR_TEXT_PRESS:
-        if (o->color_text_press.has) return o->color_text_press.v;
-        if (o->color_text.has) return dvui_theme_adjust_color_for_state(t, o->color_text.v, ask);
+        if (dvui_options_has(o, DVUI_BIT(color_text_press))) return o->color_text_press;
+        if (dvui_options_has(o, DVUI_BIT(color_text))) return dvui_theme_adjust_color_for_state(t, o->color_text, ask);
         break;
     }
-    return dvui_theme_color(t, dvui_options_style_get(o), ask);
+    return dvui_theme_color(t, o->style, ask);
 }
 
 // ---------------------------------------------------------------------------

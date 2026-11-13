@@ -8,8 +8,8 @@
 //
 //     dvui_window_begin(win, nanoTime);
 //     dvui_sdl3gpu_add_all_events(backend, win);
-//     dvui_BoxWidget* b = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){0}, (dvui_Options){0});
-//     if (dvui_button(DVUI_SRC, (dvui_Size){40, 12}, (dvui_ButtonInitOptions){0}, (dvui_Options){0})) { ... }
+//     dvui_BoxWidget* b = dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EXPAND(DVUI_EXPAND_BOTH));
+//     if (dvui_button(DVUI_LABEL_SIZE(40, 12), DVUI_FILL(dvui_color_rgb(200, 80, 80)))) { ... }
 //     dvui_box_widget_deinit(b);
 //     dvui_window_end(win);
 #pragma once
@@ -145,28 +145,7 @@ dvui_Color dvui_color_lighten(dvui_Color c, float delta_l);
 dvui_Color dvui_color_from_lightness(float l);
 
 // ---------------------------------------------------------------------------
-// Volitelné hodnoty – náhrada Zig `?T`
-// ---------------------------------------------------------------------------
-
-#define DVUI_OPT(T, Name) \
-    typedef struct Name { \
-        bool has; \
-        T v; \
-    } Name
-
-// Použití: `.margin = DVUI_SOME(dvui_rect_all(4))`
-#define DVUI_SOME(...) {.has = true, .v = __VA_ARGS__}
-
-DVUI_OPT(float, dvui_OptF32);
-DVUI_OPT(bool, dvui_OptBool);
-DVUI_OPT(size_t, dvui_OptUsize);
-DVUI_OPT(dvui_Rect, dvui_OptRect);
-DVUI_OPT(dvui_Size, dvui_OptSize);
-DVUI_OPT(dvui_Point, dvui_OptPoint);
-DVUI_OPT(dvui_Color, dvui_OptColor);
-
-// ---------------------------------------------------------------------------
-// Options (DVUI: Options.zig)
+// Výčty používané ve vlastnostech widgetů
 // ---------------------------------------------------------------------------
 
 typedef enum dvui_Expand {
@@ -177,7 +156,6 @@ typedef enum dvui_Expand {
     // Zachovat poměr stran z min. velikosti a roztáhnout co nejvíc.
     DVUI_EXPAND_RATIO,
 } dvui_Expand;
-DVUI_OPT(dvui_Expand, dvui_OptExpand);
 
 bool dvui_expand_is_horizontal(dvui_Expand e);
 bool dvui_expand_is_vertical(dvui_Expand e);
@@ -194,7 +172,6 @@ typedef enum dvui_StyleName {
     DVUI_STYLE_HIGHLIGHT,
     DVUI_STYLE_ERR,
 } dvui_StyleName;
-DVUI_OPT(dvui_StyleName, dvui_OptStyle);
 
 // DVUI: Options.ColorAsk
 typedef enum dvui_ColorAsk {
@@ -207,62 +184,281 @@ typedef enum dvui_ColorAsk {
     DVUI_COLOR_BORDER,
 } dvui_ColorAsk;
 
-typedef struct dvui_Options {
-    // Odliší widgety vytvořené na stejném místě ve zdrojáku (např. ve smyčce).
-    dvui_OptUsize id_extra;
-    // Jméno pro ladění (NULL = nenastaveno).
-    const char* name;
+// DVUI: ScrollInfo.ScrollMode
+typedef enum dvui_ScrollMode {
+    DVUI_SCROLL_NONE = 0,
+    DVUI_SCROLL_AUTO,
+    DVUI_SCROLL_GIVEN,
+} dvui_ScrollMode;
 
-    // Pokud je nastaveno, widget se nevkládá do layoutu rodiče, ale umístí se
-    // přímo sem (v souřadnicích rodiče).
-    dvui_OptRect rect;
-    dvui_OptExpand expand;
-    dvui_OptF32 gravity_x;
-    dvui_OptF32 gravity_y;
+// DVUI: ScrollAreaWidget.ScrollBarMode
+typedef enum dvui_ScrollBarMode {
+    DVUI_SCROLL_BAR_AUTO = 0,
+    DVUI_SCROLL_BAR_HIDE,
+    DVUI_SCROLL_BAR_AUTO_OVERLAY,
+    DVUI_SCROLL_BAR_SHOW,
+} dvui_ScrollBarMode;
 
-    dvui_OptColor color_fill;
-    dvui_OptColor color_fill_hover;
-    dvui_OptColor color_fill_press;
-    dvui_OptColor color_text;
-    dvui_OptColor color_text_hover;
-    dvui_OptColor color_text_press;
-    dvui_OptColor color_border;
+// DVUI: FloatingTooltipWidget.Position
+typedef enum dvui_TooltipPosition {
+    DVUI_TOOLTIP_HORIZONTAL = 0,
+    DVUI_TOOLTIP_VERTICAL,
+    DVUI_TOOLTIP_STICKY,
+    DVUI_TOOLTIP_ABSOLUTE,
+} dvui_TooltipPosition;
 
-    dvui_OptStyle style;
+// DVUI: FloatingWindowWidget.InitOptions.resize
+typedef enum dvui_FloatingWindowResize {
+    DVUI_RESIZE_ALL = 0,
+    DVUI_RESIZE_NONE,
+} dvui_FloatingWindowResize;
 
-    // Vnější okraj, rámeček a vnitřní okraj (x = vlevo, y = nahoře,
-    // w = vpravo, h = dole).
-    dvui_OptRect margin;
-    dvui_OptRect border;
-    dvui_OptRect padding;
+// DVUI: FloatingWindowWidget.InitOptions.window_avoid
+typedef enum dvui_WindowAvoid {
+    DVUI_WINDOW_AVOID_NUDGE_ONCE = 0,
+    DVUI_WINDOW_AVOID_NONE,
+    DVUI_WINDOW_AVOID_NUDGE,
+} dvui_WindowAvoid;
 
-    // Min. a max. velikost obsahu (bez padding/border/margin).
-    dvui_OptSize min_size_content;
-    dvui_OptSize max_size_content;
+typedef struct dvui_ScrollInfo dvui_ScrollInfo;
+typedef struct dvui_ScrollAreaWidget dvui_ScrollAreaWidget;
+typedef struct dvui_Options dvui_Options;
 
-    // Kreslit pozadí (výplň) v background rectu.
-    dvui_OptBool background;
-} dvui_Options;
+// ---------------------------------------------------------------------------
+// Vlastnosti widgetů – seznam značek (tag list)
+//
+// Widget dostane jeden seznam vlastností, např.
+//
+//     dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL), DVUI_MARGIN_ALL(4));
+//
+// Co v seznamu není, je „nenastaveno“ a použije se výchozí hodnota widgetu
+// (DVUI: `defaults.override(opts)`). Když je vlastnost v seznamu víckrát,
+// platí poslední. Vlastnosti se dělí na
+//   - společné (DVUI `Options`) – rozumí jim všechny widgety, ukládají se do
+//     WidgetData a předávají se dětem,
+//   - vlastnosti widgetu (DVUI `InitOptions`) – každý widget čte jen své,
+//     cizí ignoruje (a ohlásí je jako chybu).
+// ---------------------------------------------------------------------------
 
-// DVUI: Options.override – nastavené položky `over` přepíší položky `self`.
+// Společné vlastnosti (DVUI: Options.zig).
+//   X(jméno, typ, hodnota, když vlastnost nikdo nezadá)
+#define DVUI_OPTION_PROPS(X)                                                         \
+    /* odliší widgety vytvořené na stejném místě ve zdrojáku (smyčka) */            \
+    X(id_extra, size_t, 0)                                                           \
+    /* jméno pro ladění */                                                           \
+    X(name, const char*, nullptr)                                                    \
+    /* widget mimo layout rodiče, umístěný přímo sem (souřadnice rodiče) */         \
+    X(rect, dvui_Rect, ((dvui_Rect){0}))                                             \
+    X(expand, dvui_Expand, DVUI_EXPAND_NONE)                                         \
+    X(gravity_x, float, 0.0f)                                                        \
+    X(gravity_y, float, 0.0f)                                                        \
+    /* barvy: nezadaná barva se bere z tématu */                                    \
+    X(color_fill, dvui_Color, ((dvui_Color){0}))                                     \
+    X(color_fill_hover, dvui_Color, ((dvui_Color){0}))                               \
+    X(color_fill_press, dvui_Color, ((dvui_Color){0}))                               \
+    X(color_text, dvui_Color, ((dvui_Color){0}))                                     \
+    X(color_text_hover, dvui_Color, ((dvui_Color){0}))                               \
+    X(color_text_press, dvui_Color, ((dvui_Color){0}))                               \
+    X(color_border, dvui_Color, ((dvui_Color){0}))                                   \
+    X(style, dvui_StyleName, DVUI_STYLE_CONTENT)                                     \
+    /* vnější okraj, rámeček, vnitřní okraj (x vlevo, y nahoře, w vpravo, h dole) */ \
+    X(margin, dvui_Rect, ((dvui_Rect){0}))                                           \
+    X(border, dvui_Rect, ((dvui_Rect){0}))                                           \
+    X(padding, dvui_Rect, ((dvui_Rect){0}))                                          \
+    /* min. a max. velikost obsahu (bez padding/border/margin) */                    \
+    X(min_size_content, dvui_Size, ((dvui_Size){0}))                                 \
+    X(max_size_content, dvui_Size, ((dvui_Size){DVUI_MAX_FLOAT_SAFE, DVUI_MAX_FLOAT_SAFE})) \
+    /* kreslit pozadí v background rectu */                                         \
+    X(background, bool, false)
+
+// Vlastnosti jednotlivých widgetů (DVUI: InitOptions widgetů). Výchozí
+// hodnota zde je obecná; widget může mít vlastní (viz jeho dokumentace).
+#define DVUI_WIDGET_PROPS(X)                                                         \
+    /* Box, ScrollBar */                                                             \
+    X(dir, dvui_Direction, DVUI_VERTICAL)                                            \
+    X(equal_space, bool, false)                                                      \
+    X(num_packed_expanded, uint32_t, 0)                                              \
+    /* Button, Label, tooltip, WindowHeader: velikost „textu“ */                    \
+    X(label_size, dvui_Size, ((dvui_Size){0}))                                       \
+    X(draw_focus, bool, true)                                                        \
+    X(grayed, bool, false)                                                           \
+    /* ScrollBar, ScrollContainer, ScrollArea, Grid */                               \
+    X(scroll_info, dvui_ScrollInfo*, nullptr)                                        \
+    X(focus_id, dvui_Id, 0)                                                          \
+    X(vertical, dvui_ScrollMode, DVUI_SCROLL_AUTO)                                   \
+    X(vertical_bar, dvui_ScrollBarMode, DVUI_SCROLL_BAR_AUTO)                        \
+    X(horizontal, dvui_ScrollMode, DVUI_SCROLL_NONE)                                 \
+    X(horizontal_bar, dvui_ScrollBarMode, DVUI_SCROLL_BAR_AUTO)                      \
+    X(frame_viewport, dvui_Point, ((dvui_Point){0}))                                 \
+    X(frame_viewport_out, dvui_Point*, nullptr)                                      \
+    X(lock_visible, bool, false)                                                     \
+    X(process_events_after, bool, true)                                              \
+    X(container, bool, true)                                                         \
+    X(user_scroll, dvui_Point*, nullptr)                                             \
+    X(scroll_area, dvui_ScrollAreaWidget*, nullptr)                                  \
+    X(event_rect, dvui_RectPhysical, ((dvui_RectPhysical){0}))                                       \
+    /* Scale */                                                                      \
+    X(scale, float*, nullptr)                                                        \
+    /* Floating */                                                                   \
+    X(mouse_events, bool, true)                                                      \
+    X(from, dvui_PointPhysical, ((dvui_PointPhysical){0}))                                           \
+    X(from_gravity_x, float, 0.5f)                                                   \
+    X(from_gravity_y, float, 0.5f)                                                   \
+    X(stay_above_parent, bool, true)                                                 \
+    /* FloatingTooltip */                                                            \
+    X(active_rect, dvui_RectPhysical, ((dvui_RectPhysical){0}))                                      \
+    X(position, dvui_TooltipPosition, DVUI_TOOLTIP_HORIZONTAL)                       \
+    X(interactive, bool, false)                                                      \
+    X(tooltip_scale, float, 1.0f)                                                    \
+    /* FloatingWindow, WindowHeader */                                               \
+    X(modal, bool, false)                                                            \
+    X(modal_alpha, uint8_t, 80)                                                      \
+    X(rect_io, dvui_Rect*, nullptr)                                                  \
+    X(center_on, dvui_Rect, ((dvui_Rect){0}))                                        \
+    X(open_flag, bool*, nullptr)                                                     \
+    X(resize, dvui_FloatingWindowResize, DVUI_RESIZE_ALL)                            \
+    X(stay_above_parent_window, bool, false)                                         \
+    X(window_avoid, dvui_WindowAvoid, DVUI_WINDOW_AVOID_NUDGE_ONCE)                  \
+    /* Grid */                                                                       \
+    X(rows, size_t, 0)                                                               \
+    X(layout_only, bool, false)                                                      \
+    X(col, size_t, 0)                                                                \
+    X(row, size_t, 0)                                                                \
+    X(resizable, bool, true)                                                         \
+    /* vložení hotových Options (např. předání stylu dítěti) */                     \
+    X(options, const dvui_Options*, nullptr)
+
+// Značky.
+typedef enum dvui_PropTag {
+    DVUI_PROP_END = 0, // konec seznamu
+#define DVUI_X(name, type, def) DVUI_PROP_##name,
+    DVUI_OPTION_PROPS(DVUI_X)
+    DVUI_PROP_OPTIONS_COUNT_, // pomocná: značky před ní jsou společné
+    DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+    DVUI_PROP_COUNT,
+} dvui_PropTag;
+
+// Bit společné vlastnosti v dvui_Options.set.
+#define DVUI_BIT(name) (1u << DVUI_PROP_##name)
+
+// Společné vlastnosti rozbalené do struktury. Ukládá se do WidgetData a čte
+// ji kód widgetů. `set` říká, které vlastnosti byly zadané (DVUI: `?T != null`).
+struct dvui_Options {
+#define DVUI_X(name, type, def) type name;
+    DVUI_OPTION_PROPS(DVUI_X)
+#undef DVUI_X
+    uint32_t set;
+};
+
+// Jedna položka seznamu: značka + hodnota.
+typedef struct dvui_Prop {
+    dvui_PropTag tag;
+    union {
+#define DVUI_X(name, type, def) type name;
+        DVUI_OPTION_PROPS(DVUI_X)
+        DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+    };
+} dvui_Prop;
+
+// Seznam vlastností předávaný widgetům (ukončený DVUI_PROP_END).
+typedef struct dvui_Props {
+    const dvui_Prop* items;
+} dvui_Props;
+
+// Obecný konstruktor: DVUI_P(margin, dvui_rect_all(4)), DVUI_P(dir, DVUI_HORIZONTAL).
+// Je to inicializátor, takže funguje i ve statických polích.
+#define DVUI_P(name, ...) {.tag = DVUI_PROP_##name, .name = __VA_ARGS__}
+
+// Seznam vlastností jako výraz; prázdný seznam je povolený (C23 __VA_OPT__).
+#define DVUI_PROPS(...) ((dvui_Props){(const dvui_Prop[]){__VA_ARGS__ __VA_OPT__(, ) {0}}})
+
+// --- zkratky pro společné vlastnosti
+#define DVUI_ID_EXTRA(i) DVUI_P(id_extra, (i))
+#define DVUI_NAME(s) DVUI_P(name, (s))
+#define DVUI_RECT(...) DVUI_P(rect, __VA_ARGS__)
+#define DVUI_EXPAND(e) DVUI_P(expand, (e))
+#define DVUI_GRAVITY_X(g) DVUI_P(gravity_x, (g))
+#define DVUI_GRAVITY_Y(g) DVUI_P(gravity_y, (g))
+#define DVUI_FILL(...) DVUI_P(color_fill, __VA_ARGS__)
+#define DVUI_FILL_HOVER(...) DVUI_P(color_fill_hover, __VA_ARGS__)
+#define DVUI_FILL_PRESS(...) DVUI_P(color_fill_press, __VA_ARGS__)
+#define DVUI_TEXT_COLOR(...) DVUI_P(color_text, __VA_ARGS__)
+#define DVUI_BORDER_COLOR(...) DVUI_P(color_border, __VA_ARGS__)
+#define DVUI_STYLE(s) DVUI_P(style, (s))
+#define DVUI_MARGIN(...) DVUI_P(margin, __VA_ARGS__)
+#define DVUI_MARGIN_ALL(v) DVUI_P(margin, {(v), (v), (v), (v)})
+#define DVUI_BORDER(...) DVUI_P(border, __VA_ARGS__)
+#define DVUI_BORDER_ALL(v) DVUI_P(border, {(v), (v), (v), (v)})
+#define DVUI_PADDING(...) DVUI_P(padding, __VA_ARGS__)
+#define DVUI_PADDING_ALL(v) DVUI_P(padding, {(v), (v), (v), (v)})
+#define DVUI_MIN_SIZE(w, h) DVUI_P(min_size_content, {(w), (h)})
+#define DVUI_MAX_SIZE(w, h) DVUI_P(max_size_content, {(w), (h)})
+#define DVUI_BACKGROUND(b) DVUI_P(background, (b))
+#define DVUI_OPTIONS(p) DVUI_P(options, (p))
+
+// --- zkratky pro vlastnosti widgetů
+#define DVUI_DIR(d) DVUI_P(dir, (d))
+#define DVUI_EQUAL_SPACE(b) DVUI_P(equal_space, (b))
+#define DVUI_LABEL_SIZE(w, h) DVUI_P(label_size, {(w), (h)})
+#define DVUI_DRAW_FOCUS(b) DVUI_P(draw_focus, (b))
+#define DVUI_GRAYED(b) DVUI_P(grayed, (b))
+#define DVUI_SCROLL_INFO(p) DVUI_P(scroll_info, (p))
+#define DVUI_SCROLL_VERTICAL(m) DVUI_P(vertical, (m))
+#define DVUI_SCROLL_HORIZONTAL(m) DVUI_P(horizontal, (m))
+#define DVUI_VERTICAL_BAR(m) DVUI_P(vertical_bar, (m))
+#define DVUI_HORIZONTAL_BAR(m) DVUI_P(horizontal_bar, (m))
+#define DVUI_ACTIVE_RECT(...) DVUI_P(active_rect, __VA_ARGS__)
+#define DVUI_TOOLTIP_POSITION(p) DVUI_P(position, (p))
+#define DVUI_MODAL(b) DVUI_P(modal, (b))
+#define DVUI_OPEN_FLAG(p) DVUI_P(open_flag, (p))
+#define DVUI_TITLE_SIZE(w, h) DVUI_P(label_size, {(w), (h)})
+#define DVUI_ROWS(n) DVUI_P(rows, (n))
+#define DVUI_COL(c) DVUI_P(col, (c))
+#define DVUI_ROW(r) DVUI_P(row, (r))
+#define DVUI_RESIZABLE(b) DVUI_P(resizable, (b))
+
+// Vlastnosti widgetu rozbalené do struktury (pomocná struktura při init).
+typedef struct dvui_WidgetProps {
+#define DVUI_X(name, type, def) type name;
+    DVUI_WIDGET_PROPS(DVUI_X)
+#undef DVUI_X
+    bool has[DVUI_PROP_COUNT];
+} dvui_WidgetProps;
+
+// Rozbalí seznamy: nejdřív obecné výchozí hodnoty, pak `defaults` widgetu,
+// pak `props` uživatele. `allowed` je seznam značek widgetu ukončený
+// DVUI_PROP_END (společné značky jsou povolené vždy); cizí značky se ohlásí.
+// `wp` smí být NULL, pokud widget žádné vlastní vlastnosti nemá.
+void dvui_props_resolve(const char* widget, const dvui_Prop* defaults, dvui_Props props, const dvui_PropTag* allowed,
+                        dvui_Options* opts, dvui_WidgetProps* wp);
+
+// Zapíše do `out` zadané vlastnosti widgetu z `wp`, jejichž značky jsou
+// v `tags` (předání vlastností vnitřnímu widgetu). Vrací počet zapsaných
+// položek; `out` musí mít místo pro všechny značky z `tags`. Konec seznamu
+// nepřidává.
+size_t dvui_props_forward(const dvui_WidgetProps* wp, const dvui_PropTag* tags, dvui_Prop* out);
+
+// Výchozí stav Options (nic nezadáno).
+dvui_Options dvui_options_default(void);
+// Aplikuje seznam na kopii `self` a vrátí ji (vlastnosti widgetů ignoruje).
+dvui_Options dvui_options_apply(dvui_Options self, dvui_Props props);
+// Zkratka: dvui_options_with(o, DVUI_EXPAND(DVUI_EXPAND_BOTH), …)
+#define dvui_options_with(self, ...) dvui_options_apply((self), DVUI_PROPS(__VA_ARGS__))
+// Byla vlastnost zadána? dvui_options_has(o, DVUI_BIT(color_fill))
+bool dvui_options_has(const dvui_Options* o, uint32_t bits);
+
+// DVUI: Options.override – zadané vlastnosti `over` přepíší `self`.
 dvui_Options dvui_options_override(dvui_Options self, dvui_Options over);
 // DVUI: Options.strip – ponechá jen styl (barvy), vynuluje layout.
 dvui_Options dvui_options_strip(dvui_Options self);
 // DVUI: Options.styleOnly
 dvui_Options dvui_options_style_only(dvui_Options self);
 
-size_t dvui_options_id_extra(const dvui_Options* o);
-dvui_Expand dvui_options_expand_get(const dvui_Options* o);
 dvui_Gravity dvui_options_gravity_get(const dvui_Options* o);
-dvui_Rect dvui_options_margin_get(const dvui_Options* o);
-dvui_Rect dvui_options_border_get(const dvui_Options* o);
-dvui_Rect dvui_options_padding_get(const dvui_Options* o);
-bool dvui_options_background_get(const dvui_Options* o);
-dvui_StyleName dvui_options_style_get(const dvui_Options* o);
 dvui_Size dvui_options_min_size_get(const dvui_Options* o);
-dvui_Size dvui_options_min_size_content_get(const dvui_Options* o);
 dvui_Size dvui_options_max_size_get(const dvui_Options* o);
-dvui_Size dvui_options_max_size_content_get(const dvui_Options* o);
 dvui_Size dvui_options_pad_size(const dvui_Options* o, dvui_Size s);
 // DVUI: Options.color – barva z Options, jinak z tématu.
 dvui_Color dvui_options_color(const dvui_Options* o, dvui_ColorAsk ask);
@@ -271,14 +467,15 @@ dvui_Color dvui_options_color(const dvui_Options* o, dvui_ColorAsk ask);
 // Téma (DVUI: Theme.zig, zjednodušené – viz README)
 // ---------------------------------------------------------------------------
 
+// Barva {0, 0, 0, 0} v tématu znamená „nenastaveno“ (DVUI: `?Color = null`).
 typedef struct dvui_ThemeStyle {
-    dvui_OptColor fill;
-    dvui_OptColor fill_hover;
-    dvui_OptColor fill_press;
-    dvui_OptColor text;
-    dvui_OptColor text_hover;
-    dvui_OptColor text_press;
-    dvui_OptColor border;
+    dvui_Color fill;
+    dvui_Color fill_hover;
+    dvui_Color fill_press;
+    dvui_Color text;
+    dvui_Color text_hover;
+    dvui_Color text_press;
+    dvui_Color border;
 } dvui_ThemeStyle;
 
 typedef struct dvui_Theme {
@@ -286,11 +483,11 @@ typedef struct dvui_Theme {
     bool dark;
     dvui_Color focus;
     dvui_Color fill;
-    dvui_OptColor fill_hover;
-    dvui_OptColor fill_press;
+    dvui_Color fill_hover; // nenastaveno = odvodí se z fill
+    dvui_Color fill_press;
     dvui_Color text;
-    dvui_OptColor text_hover;
-    dvui_OptColor text_press;
+    dvui_Color text_hover;
+    dvui_Color text_press;
     dvui_Color text_select;
     dvui_Color border;
     dvui_ThemeStyle control;
@@ -298,6 +495,9 @@ typedef struct dvui_Theme {
     dvui_ThemeStyle highlight;
     dvui_ThemeStyle err;
 } dvui_Theme;
+
+// Je barva tématu nastavená (není {0, 0, 0, 0})?
+bool dvui_color_is_set(dvui_Color c);
 
 // Výchozí téma podle DVUI Adwaita Light.
 dvui_Theme dvui_theme_adwaita_light(void);
@@ -363,7 +563,8 @@ void dvui_widget_data_register(dvui_WidgetData* wd);
 bool dvui_widget_data_visible(const dvui_WidgetData* wd);
 
 typedef struct dvui_BorderAndBackgroundOptions {
-    dvui_OptColor fill_color;
+    // NULL = barva z Options
+    const dvui_Color* fill_color;
 } dvui_BorderAndBackgroundOptions;
 void dvui_widget_data_border_and_background(const dvui_WidgetData* wd, dvui_BorderAndBackgroundOptions opts);
 void dvui_widget_data_focus_border(const dvui_WidgetData* wd);
@@ -549,7 +750,8 @@ typedef struct dvui_ClickOptions {
     bool* hovered;
     // DVUI výchozí .hand; zde `no_hover_cursor` vypne nastavení kurzoru.
     bool no_hover_cursor;
-    dvui_OptRect rect;
+    // NULL = border rect widgetu
+    const dvui_RectPhysical* rect;
 } dvui_ClickOptions;
 
 // DVUI: dvui.clicked
@@ -749,17 +951,31 @@ void dvui_scroll_drag(dvui_ScrollDragOptions sd);
 
 // ---------------------------------------------------------------------------
 // Widgety
+//
+// Každý widget má
+//   - `dvui_<w>_widget_init(self, src, props)` – inicializace ve vlastní paměti,
+//   - `dvui_<w>_widget_deinit(self)`,
+//   - u většiny makro `dvui_<w>(…vlastnosti…)`, které widget alokuje, doplní
+//     DVUI_SRC a uzavře seznam vlastností.
+// U každého widgetu je uvedeno, kterým vlastním vlastnostem rozumí; společným
+// (DVUI_OPTION_PROPS) rozumí všechny.
 // ---------------------------------------------------------------------------
 
 // --- Spacer, Separator, Label (DVUI: dvui.spacer, dvui.separator, LabelWidget)
 
 // Prázdný widget zabírající místo (min_size_content).
-dvui_WidgetData dvui_spacer(dvui_Src src, dvui_Options opts);
+dvui_WidgetData dvui_spacer_impl(dvui_Src src, dvui_Props props);
+#define dvui_spacer(...) dvui_spacer_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
+
 // Tenká čára (min_size_content 1×1, barva okraje tématu).
-dvui_WidgetData dvui_separator(dvui_Src src, dvui_Options opts);
+dvui_WidgetData dvui_separator_impl(dvui_Src src, dvui_Props props);
+#define dvui_separator(...) dvui_separator_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
+
 // Zástupce za LabelWidget: chová se v layoutu jako popisek s textem velikosti
-// `text_size` (výchozí padding 6), ale text nekreslí.
-dvui_WidgetData dvui_label_placeholder(dvui_Src src, dvui_Size text_size, dvui_Options opts);
+// `label_size` (výchozí padding 6), ale text nekreslí.
+// Vlastní vlastnosti: label_size.
+dvui_WidgetData dvui_label_placeholder_impl(dvui_Src src, dvui_Props props);
+#define dvui_label_placeholder(...) dvui_label_placeholder_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // --- Overlay (DVUI: OverlayWidget.zig)
 
@@ -767,13 +983,15 @@ typedef struct dvui_OverlayWidget {
     dvui_WidgetData wd;
 } dvui_OverlayWidget;
 
-void dvui_overlay_widget_init(dvui_OverlayWidget* self, dvui_Src src, dvui_Options opts);
+void dvui_overlay_widget_init(dvui_OverlayWidget* self, dvui_Src src, dvui_Props props);
 void dvui_overlay_widget_draw_background(dvui_OverlayWidget* self);
 dvui_Widget dvui_overlay_widget_widget(dvui_OverlayWidget* self);
 void dvui_overlay_widget_deinit(dvui_OverlayWidget* self);
-dvui_OverlayWidget* dvui_overlay(dvui_Src src, dvui_Options opts);
+dvui_OverlayWidget* dvui_overlay_impl(dvui_Src src, dvui_Props props);
+#define dvui_overlay(...) dvui_overlay_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // --- Box (DVUI: BoxWidget.zig)
+// Vlastní vlastnosti: dir (výchozí VERTICAL), equal_space, num_packed_expanded.
 
 typedef struct dvui_BoxInitOptions {
     dvui_Direction dir;
@@ -808,7 +1026,7 @@ typedef struct dvui_BoxWidget {
     float pixels_per_w;
 } dvui_BoxWidget;
 
-void dvui_box_widget_init(dvui_BoxWidget* self, dvui_Src src, dvui_BoxInitOptions init_options, dvui_Options opts);
+void dvui_box_widget_init(dvui_BoxWidget* self, dvui_Src src, dvui_Props props);
 void dvui_box_widget_draw_background(dvui_BoxWidget* self);
 dvui_Widget dvui_box_widget_widget(dvui_BoxWidget* self);
 dvui_WidgetData* dvui_box_widget_data(dvui_BoxWidget* self);
@@ -817,13 +1035,15 @@ dvui_RectScale dvui_box_widget_screen_rect_scale(dvui_BoxWidget* self, dvui_Rect
 void dvui_box_widget_min_size_for_child(dvui_BoxWidget* self, dvui_Size s);
 void dvui_box_widget_deinit(dvui_BoxWidget* self);
 // DVUI: dvui.box – alokuje widget, zavolá init a drawBackground.
-dvui_BoxWidget* dvui_box(dvui_Src src, dvui_BoxInitOptions init_opts, dvui_Options opts);
+dvui_BoxWidget* dvui_box_impl(dvui_Src src, dvui_Props props);
+#define dvui_box(...) dvui_box_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // --- Button (DVUI: ButtonWidget.zig)
+// Vlastní vlastnosti: draw_focus (výchozí true), grayed; dvui_button navíc
+// label_size (velikost zástupce popisku).
 
 typedef struct dvui_ButtonInitOptions {
-    // DVUI výchozí draw_focus = true; zde opačně kvůli {0}.
-    bool no_draw_focus;
+    bool draw_focus;
     bool grayed;
 } dvui_ButtonInitOptions;
 
@@ -835,9 +1055,9 @@ typedef struct dvui_ButtonWidget {
     bool click;
 } dvui_ButtonWidget;
 
-extern dvui_Options dvui_button_widget_defaults;
+extern const dvui_Prop dvui_button_widget_defaults[];
 
-void dvui_button_widget_init(dvui_ButtonWidget* self, dvui_Src src, dvui_ButtonInitOptions init_options, dvui_Options opts);
+void dvui_button_widget_init(dvui_ButtonWidget* self, dvui_Src src, dvui_Props props);
 void dvui_button_widget_process_events(dvui_ButtonWidget* self);
 void dvui_button_widget_draw_background(dvui_ButtonWidget* self);
 void dvui_button_widget_draw_focus(dvui_ButtonWidget* self);
@@ -851,9 +1071,11 @@ dvui_WidgetData* dvui_button_widget_data(dvui_ButtonWidget* self);
 void dvui_button_widget_deinit(dvui_ButtonWidget* self);
 // DVUI: dvui.button – tlačítko bez textu; místo popisku je zástupce o velikosti
 // `label_size`. Vrací true, pokud bylo v tomto snímku kliknuto.
-bool dvui_button(dvui_Src src, dvui_Size label_size, dvui_ButtonInitOptions init_opts, dvui_Options opts);
+bool dvui_button_impl(dvui_Src src, dvui_Props props);
+#define dvui_button(...) dvui_button_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // --- Scale (DVUI: ScaleWidget.zig)
+// Vlastní vlastnosti: scale (ukazatel; bez něj se měřítko pamatuje v datech).
 
 typedef struct dvui_ScaleWidget {
     dvui_WidgetData wd;
@@ -861,35 +1083,21 @@ typedef struct dvui_ScaleWidget {
     dvui_BasicLayout layout;
 } dvui_ScaleWidget;
 
-void dvui_scale_widget_init(dvui_ScaleWidget* self, dvui_Src src, float* scale, dvui_Options opts);
+void dvui_scale_widget_init(dvui_ScaleWidget* self, dvui_Src src, dvui_Props props);
 dvui_Widget dvui_scale_widget_widget(dvui_ScaleWidget* self);
 void dvui_scale_widget_deinit(dvui_ScaleWidget* self);
 
 // --- ScrollInfo (DVUI: ScrollInfo.zig)
 
-typedef enum dvui_ScrollMode {
-    DVUI_SCROLL_NONE = 0,
-    DVUI_SCROLL_AUTO,
-    DVUI_SCROLL_GIVEN,
-} dvui_ScrollMode;
-DVUI_OPT(dvui_ScrollMode, dvui_OptScrollMode);
-
-typedef enum dvui_ScrollBarMode {
-    DVUI_SCROLL_BAR_AUTO = 0,
-    DVUI_SCROLL_BAR_HIDE,
-    DVUI_SCROLL_BAR_AUTO_OVERLAY,
-    DVUI_SCROLL_BAR_SHOW,
-} dvui_ScrollBarMode;
-
 bool dvui_scroll_bar_mode_auto_any(dvui_ScrollBarMode m);
 
-typedef struct dvui_ScrollInfo {
+struct dvui_ScrollInfo {
     dvui_ScrollMode vertical;
     dvui_ScrollMode horizontal;
     dvui_Size virtual_size;
     dvui_Rect viewport;
     dvui_Point velocity;
-} dvui_ScrollInfo;
+};
 
 // DVUI výchozí: vertical = .auto, horizontal = .none
 dvui_ScrollInfo dvui_scroll_info_default(void);
@@ -906,12 +1114,7 @@ void dvui_scroll_info_scroll_page_up(dvui_ScrollInfo* si, dvui_Direction dir);
 void dvui_scroll_info_scroll_page_down(dvui_ScrollInfo* si, dvui_Direction dir);
 
 // --- ScrollBar (DVUI: ScrollBarWidget.zig)
-
-typedef struct dvui_ScrollBarInitOptions {
-    dvui_ScrollInfo* scroll_info;
-    dvui_Direction direction;
-    dvui_Id focus_id;
-} dvui_ScrollBarInitOptions;
+// Vlastní vlastnosti: scroll_info (povinná), dir (výchozí VERTICAL), focus_id.
 
 typedef struct dvui_ScrollBarWidget {
     dvui_WidgetData wd;
@@ -928,24 +1131,25 @@ typedef struct dvui_ScrollBarGrab {
     dvui_Color color;
 } dvui_ScrollBarGrab;
 
-extern dvui_Options dvui_scroll_bar_widget_defaults;
+extern const dvui_Prop dvui_scroll_bar_widget_defaults[];
 
-void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget* self, dvui_Src src, dvui_ScrollBarInitOptions init_opts, dvui_Options opts);
+void dvui_scroll_bar_widget_init(dvui_ScrollBarWidget* self, dvui_Src src, dvui_Props props);
 dvui_ScrollBarGrab dvui_scroll_bar_widget_grab(dvui_ScrollBarWidget* self);
 void dvui_scroll_bar_grab_draw(dvui_ScrollBarGrab g);
 void dvui_scroll_bar_widget_deinit(dvui_ScrollBarWidget* self);
 
 // --- ScrollContainer (DVUI: ScrollContainerWidget.zig)
-
-typedef struct dvui_ScrollAreaWidget dvui_ScrollAreaWidget;
+// Vlastní vlastnosti: scroll_info (povinná), scroll_area, frame_viewport,
+// lock_visible, event_rect, process_events_after (výchozí true), user_scroll.
 
 typedef struct dvui_ScrollContainerInitOptions {
     dvui_ScrollAreaWidget* scroll_area;
-    dvui_OptPoint frame_viewport;
+    bool has_frame_viewport;
+    dvui_Point frame_viewport;
     bool lock_visible;
-    dvui_OptRect event_rect;
-    // DVUI výchozí process_events_after = true; zde opačně kvůli {0}.
-    bool no_process_events_after;
+    bool has_event_rect;
+    dvui_RectPhysical event_rect;
+    bool process_events_after;
     dvui_Point* user_scroll;
 } dvui_ScrollContainerInitOptions;
 
@@ -971,7 +1175,7 @@ struct dvui_ScrollContainerWidget {
 dvui_ScrollContainerWidget* dvui_scroll_container_current(void);
 dvui_ScrollContainerWidget* dvui_scroll_container_scroll_set(dvui_ScrollContainerWidget* scroll);
 
-void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Src src, dvui_ScrollInfo* io_scroll_info, dvui_ScrollContainerInitOptions init_options, dvui_Options opts);
+void dvui_scroll_container_widget_init(dvui_ScrollContainerWidget* self, dvui_Src src, dvui_Props props);
 bool dvui_scroll_container_widget_match_event(dvui_ScrollContainerWidget* self, dvui_Event* e);
 void dvui_scroll_container_widget_process_events(dvui_ScrollContainerWidget* self);
 void dvui_scroll_container_widget_process_velocity_after(dvui_ScrollContainerWidget* self);
@@ -987,23 +1191,10 @@ void dvui_scroll_container_widget_process_event_after(dvui_ScrollContainerWidget
 void dvui_scroll_container_widget_deinit(dvui_ScrollContainerWidget* self);
 
 // --- ScrollArea (DVUI: ScrollAreaWidget.zig)
-
-typedef struct dvui_ScrollAreaInitOptions {
-    dvui_ScrollInfo* scroll_info;
-    dvui_OptScrollMode vertical;   // výchozí .auto
-    dvui_ScrollBarMode vertical_bar;
-    dvui_OptScrollMode horizontal; // výchozí .none
-    dvui_ScrollBarMode horizontal_bar;
-    dvui_Id focus_id;
-    dvui_OptPoint frame_viewport;
-    dvui_Point* frame_viewport_out;
-    bool lock_visible;
-    // DVUI výchozí process_events_after = true a container = true; zde
-    // opačně kvůli {0}.
-    bool no_process_events_after;
-    bool no_container;
-    dvui_Point* user_scroll;
-} dvui_ScrollAreaInitOptions;
+// Vlastní vlastnosti: scroll_info, vertical (výchozí AUTO), vertical_bar,
+// horizontal (výchozí NONE), horizontal_bar, focus_id, frame_viewport,
+// frame_viewport_out, lock_visible, process_events_after (výchozí true),
+// container (výchozí true), user_scroll.
 
 struct dvui_ScrollAreaWidget {
     // `si` je první, aby adresa hbox nebyla shodná s adresou celé struktury
@@ -1019,24 +1210,28 @@ struct dvui_ScrollAreaWidget {
     dvui_ScrollContainerWidget scroll;
 };
 
-extern dvui_Options dvui_scroll_area_widget_defaults;
+// Značky, kterým ScrollArea rozumí (používá i grid pro předání dál).
+extern const dvui_PropTag dvui_scroll_area_widget_tags[];
+extern const dvui_Prop dvui_scroll_area_widget_defaults[];
 
-void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts);
+void dvui_scroll_area_widget_init(dvui_ScrollAreaWidget* self, dvui_Src src, dvui_Props props);
 dvui_WidgetData* dvui_scroll_area_widget_data(dvui_ScrollAreaWidget* self);
 void dvui_scroll_area_widget_set_container_rect(dvui_ScrollAreaWidget* self, dvui_Rect rect);
 void dvui_scroll_area_widget_deinit(dvui_ScrollAreaWidget* self);
-dvui_ScrollAreaWidget* dvui_scroll_area(dvui_Src src, dvui_ScrollAreaInitOptions init_opts, dvui_Options opts);
+dvui_ScrollAreaWidget* dvui_scroll_area_impl(dvui_Src src, dvui_Props props);
+#define dvui_scroll_area(...) dvui_scroll_area_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // --- Floating (DVUI: FloatingWidget.zig)
+// Vlastní vlastnosti: mouse_events (výchozí true), from, from_gravity_x/y
+// (výchozí 0.5), stay_above_parent (výchozí true).
 
 typedef struct dvui_FloatingInitOptions {
-    // DVUI výchozí mouse_events = true a stay_above_parent = true; zde opačně.
-    bool no_mouse_events;
-    dvui_OptPoint from;
-    float from_gravity_x; // DVUI výchozí 0.5 – použije se, pokud has_from_gravity
+    bool mouse_events;
+    bool has_from;
+    dvui_PointPhysical from;
+    float from_gravity_x;
     float from_gravity_y;
-    bool has_from_gravity;
-    bool no_stay_above_parent;
+    bool stay_above_parent;
 } dvui_FloatingInitOptions;
 
 typedef struct dvui_FloatingWidget {
@@ -1050,25 +1245,21 @@ typedef struct dvui_FloatingWidget {
     dvui_ScaleWidget scaler;
 } dvui_FloatingWidget;
 
-void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_FloatingInitOptions init_opts, dvui_Options opts);
+void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_Props props);
 dvui_Widget dvui_floating_widget_widget(dvui_FloatingWidget* self);
 void dvui_floating_widget_deinit(dvui_FloatingWidget* self);
 
 // --- FloatingTooltip (DVUI: FloatingTooltipWidget.zig)
-
-typedef enum dvui_TooltipPosition {
-    DVUI_TOOLTIP_HORIZONTAL = 0,
-    DVUI_TOOLTIP_VERTICAL,
-    DVUI_TOOLTIP_STICKY,
-    DVUI_TOOLTIP_ABSOLUTE,
-} dvui_TooltipPosition;
+// Vlastní vlastnosti: active_rect (fyzické pixely; tooltip se ukáže, když je
+// v něm myš), position, interactive, tooltip_scale; dvui_tooltip navíc
+// label_size (velikost zástupce textu).
 
 typedef struct dvui_FloatingTooltipInitOptions {
-    // Tooltip se ukáže, když je myš v tomto fyzickém obdélníku.
     dvui_RectPhysical active_rect;
     dvui_TooltipPosition position;
     bool interactive;
-    dvui_OptF32 scale;
+    bool has_scale;
+    float scale;
 } dvui_FloatingTooltipInitOptions;
 
 typedef struct dvui_FloatingTooltipWidget dvui_FloatingTooltipWidget;
@@ -1089,36 +1280,30 @@ struct dvui_FloatingTooltipWidget {
     bool tt_child_shown;
 };
 
-extern dvui_Options dvui_floating_tooltip_widget_defaults;
+extern const dvui_Prop dvui_floating_tooltip_widget_defaults[];
 
-void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget* self, dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Options opts);
+void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget* self, dvui_Src src, dvui_Props props);
 // Vrací true, pokud se má tooltip ukázat; pak do něj lze vkládat widgety.
 bool dvui_floating_tooltip_widget_shown(dvui_FloatingTooltipWidget* self);
 dvui_Widget dvui_floating_tooltip_widget_widget(dvui_FloatingTooltipWidget* self);
 dvui_WidgetData* dvui_floating_tooltip_widget_data(dvui_FloatingTooltipWidget* self);
 void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget* self);
-// DVUI: dvui.tooltip – místo textu obsahuje zástupce o velikosti `content_size`.
-void dvui_tooltip(dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Size content_size, dvui_Options opts);
+// DVUI: dvui.tooltip – místo textu obsahuje zástupce o velikosti `label_size`.
+void dvui_tooltip_impl(dvui_Src src, dvui_Props props);
+#define dvui_tooltip(...) dvui_tooltip_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // --- FloatingWindow (DVUI: FloatingWindowWidget.zig)
-
-typedef enum dvui_FloatingWindowResize {
-    DVUI_RESIZE_ALL = 0,
-    DVUI_RESIZE_NONE,
-} dvui_FloatingWindowResize;
-
-typedef enum dvui_WindowAvoid {
-    DVUI_WINDOW_AVOID_NUDGE_ONCE = 0,
-    DVUI_WINDOW_AVOID_NONE,
-    DVUI_WINDOW_AVOID_NUDGE,
-} dvui_WindowAvoid;
+// Vlastní vlastnosti: modal, modal_alpha, rect_io (ukazatel na rect okna, který
+// program čte i nastavuje), center_on, open_flag, resize, stay_above_parent_window,
+// window_avoid.
 
 typedef struct dvui_FloatingWindowInitOptions {
     bool modal;
     bool has_modal_alpha;
     uint8_t modal_alpha;
     dvui_Rect* rect;
-    dvui_OptRect center_on;
+    bool has_center_on;
+    dvui_Rect center_on;
     bool* open_flag;
     dvui_FloatingWindowResize resize;
     bool stay_above_parent_window;
@@ -1157,9 +1342,9 @@ typedef struct dvui_FloatingWindowWidget {
     dvui_RectPhysical drag_area;
 } dvui_FloatingWindowWidget;
 
-extern dvui_Options dvui_floating_window_widget_defaults;
+extern const dvui_Prop dvui_floating_window_widget_defaults[];
 
-void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts);
+void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src src, dvui_Props props);
 void dvui_floating_window_widget_draw_background(dvui_FloatingWindowWidget* self);
 void dvui_floating_window_widget_process_events_before(dvui_FloatingWindowWidget* self);
 void dvui_floating_window_widget_drag_area_set(dvui_FloatingWindowWidget* self, dvui_RectPhysical rect);
@@ -1171,29 +1356,25 @@ dvui_Widget dvui_floating_window_widget_widget(dvui_FloatingWindowWidget* self);
 dvui_WidgetData* dvui_floating_window_widget_data(dvui_FloatingWindowWidget* self);
 void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget* self);
 // DVUI: dvui.floatingWindow – init, processEventsBefore, drawBackground.
-dvui_FloatingWindowWidget* dvui_floating_window(dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts);
+dvui_FloatingWindowWidget* dvui_floating_window_impl(dvui_Src src, dvui_Props props);
+#define dvui_floating_window(...) dvui_floating_window_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 // DVUI: dvui.windowHeader – lišta okna se zavíracím tlačítkem (bez titulku,
-// místo něj zástupce výšky textu). Vrací obdélník pro dragAreaSet.
-typedef struct dvui_WindowHeaderOptions {
-    dvui_Size title_size;
-    bool* open_flag;
-} dvui_WindowHeaderOptions;
-dvui_RectPhysical dvui_window_header(dvui_WindowHeaderOptions options);
+// místo něj zástupce o velikosti `label_size`). Vrací obdélník pro
+// dvui_floating_window_widget_drag_area_set.
+// Vlastní vlastnosti: label_size (DVUI_TITLE_SIZE), open_flag.
+dvui_RectPhysical dvui_window_header_impl(dvui_Props props);
+#define dvui_window_header(...) dvui_window_header_impl(DVUI_PROPS(__VA_ARGS__))
 
 // --- Grid (DVUI: GridWidget.zig)
+// Vlastní vlastnosti: rows, layout_only a všechny vlastnosti ScrollArea
+// (předají se vnitřní scroll oblasti).
 
 typedef enum dvui_GridAutoSize {
     DVUI_GRID_AUTO_SIZE_ROWS,
     DVUI_GRID_AUTO_SIZE_COLS,
     DVUI_GRID_AUTO_SIZE_BOTH,
 } dvui_GridAutoSize;
-
-typedef struct dvui_GridInitOptions {
-    dvui_ScrollAreaInitOptions scroll_opts;
-    dvui_OptUsize rows;
-    bool layout_only;
-} dvui_GridInitOptions;
 
 typedef struct dvui_GridCell {
     size_t col;
@@ -1212,6 +1393,12 @@ typedef struct dvui_GridRowOffset {
     size_t row;
     float offset;
 } dvui_GridRowOffset;
+
+// Výchozí výška řádku (DVUI: ?f32) – ukládá se v datech gridu.
+typedef struct dvui_GridRowHeightDefault {
+    bool has;
+    float height;
+} dvui_GridRowHeightDefault;
 
 typedef struct dvui_GridWidget dvui_GridWidget;
 
@@ -1269,7 +1456,7 @@ struct dvui_GridWidget {
     dvui_GridFloatList col_widths_auto;
     float* col_header_height;
     float col_header_height_auto;
-    dvui_OptF32* row_height_default;
+    dvui_GridRowHeightDefault* row_height_default;
     dvui_GridRowHeight* row_heights;
     size_t row_heights_len;
     dvui_GridRowHeightList row_heights_auto;
@@ -1284,30 +1471,21 @@ struct dvui_GridWidget {
     bool* mouse_mode;
 };
 
-extern dvui_Options dvui_grid_widget_defaults;
+extern const dvui_Prop dvui_grid_widget_defaults[];
 
-void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts);
+void dvui_grid_widget_init(dvui_GridWidget* self, dvui_Src src, dvui_Props props);
 void dvui_grid_widget_auto_size(dvui_GridWidget* self, dvui_GridAutoSize auto_size);
 // Vrací první a poslední (exkluzivně) viditelný řádek. Vyžaduje `rows`.
 void dvui_grid_widget_rows_visible(dvui_GridWidget* self, size_t* first, size_t* last);
 dvui_Widget dvui_grid_widget_widget(dvui_GridWidget* self);
 dvui_WidgetData* dvui_grid_widget_data(dvui_GridWidget* self);
-
-typedef struct dvui_GridColHeaderInitOptions {
-    size_t col;
-    // DVUI výchozí resizable = true; zde opačně kvůli {0}.
-    bool not_resizable;
-} dvui_GridColHeaderInitOptions;
-
-dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_GridColHeaderInitOptions init_opts, dvui_Options opts);
-
-typedef struct dvui_GridCellOptions {
-    size_t col;
-    size_t row;
-    bool not_col_resizable;
-} dvui_GridCellOptions;
-
-dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_GridCellOptions cell_opts, dvui_Options opts);
+// Hlavička sloupce. Vlastní vlastnosti: col, resizable (výchozí true).
+dvui_GridCellWidget* dvui_grid_widget_col_header(dvui_GridWidget* self, dvui_Props props);
+#define dvui_grid_col_header(grid, ...) dvui_grid_widget_col_header((grid), DVUI_PROPS(__VA_ARGS__))
+// Buňka. Vlastní vlastnosti: col, row, resizable (výchozí true – smí se měnit
+// šířka sloupce).
+dvui_GridCellWidget* dvui_grid_widget_cell(dvui_GridWidget* self, dvui_Props props);
+#define dvui_grid_cell(grid, ...) dvui_grid_widget_cell((grid), DVUI_PROPS(__VA_ARGS__))
 void dvui_grid_widget_cell_min_size(dvui_GridWidget* self, size_t col, size_t row, dvui_Size min_size);
 float dvui_grid_widget_col_width(dvui_GridWidget* self, size_t col);
 float dvui_grid_widget_col_offset(dvui_GridWidget* self, size_t col);
@@ -1317,7 +1495,8 @@ bool dvui_grid_widget_cell_from_point(dvui_GridWidget* self, dvui_PointPhysical 
 // Buňka pod myší (DVUI: cellHovered, jen myš).
 bool dvui_grid_widget_cell_hovered(dvui_GridWidget* self, dvui_GridCell* out);
 void dvui_grid_widget_deinit(dvui_GridWidget* self);
-dvui_GridWidget* dvui_grid(dvui_Src src, dvui_GridInitOptions init_opts, dvui_Options opts);
+dvui_GridWidget* dvui_grid_impl(dvui_Src src, dvui_Props props);
+#define dvui_grid(...) dvui_grid_impl(DVUI_SRC, DVUI_PROPS(__VA_ARGS__))
 
 dvui_Widget dvui_grid_cell_widget_widget(dvui_GridCellWidget* self);
 dvui_WidgetData* dvui_grid_cell_widget_data(dvui_GridCellWidget* self);

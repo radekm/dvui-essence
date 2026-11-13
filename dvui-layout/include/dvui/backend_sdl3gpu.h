@@ -16,13 +16,14 @@ typedef struct dvui_Sdl3GpuInitOptions {
     const char* title;
     // Velikost okna v přirozených (natural) pixelech.
     dvui_SizeNatural size;
-    dvui_OptSize min_size;
+    // Minimální velikost okna; NULL = bez omezení.
+    const dvui_SizeNatural* min_size;
     // DVUI výchozí vsync = true; zde opačně kvůli {0}.
     bool no_vsync;
     bool hidden;
-    // Barva, kterou se maže okno na začátku snímku (výchozí: pozadí okna
-    // tématu Adwaita Light, #f0f0f0).
-    dvui_OptColor clear_color;
+    // Barva, kterou se maže okno na začátku snímku; NULL = pozadí okna
+    // tématu Adwaita Light (#f0f0f0).
+    const dvui_Color* clear_color;
 } dvui_Sdl3GpuInitOptions;
 
 // DVUI: SDLBackend.initWindow – vytvoří okno, GPU zařízení a pipeline.

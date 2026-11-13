@@ -33,28 +33,42 @@ dvui_Widget dvui_floating_widget_widget(dvui_FloatingWidget* self) { return (dvu
 
 // Subwindow pro libovolnou dočasnou plovoucí věc. Sám se nefokusuje; kdy se
 // ukazuje, rozhoduje volající kód.
-void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_FloatingInitOptions init_opts, dvui_Options opts_in) {
+void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_Props props) {
+    static const dvui_Prop defaults[] = {DVUI_NAME("Floating"), {0}};
+    dvui_Options opts;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("Floating", defaults, props,
+                       DVUI_TAGS(DVUI_PROP_mouse_events, DVUI_PROP_from, DVUI_PROP_from_gravity_x, DVUI_PROP_from_gravity_y,
+                                 DVUI_PROP_stay_above_parent),
+                       &opts, &wp);
+    const dvui_FloatingInitOptions init_opts = {
+        .mouse_events = wp.mouse_events,
+        .has_from = wp.has[DVUI_PROP_from],
+        .from = wp.from,
+        .from_gravity_x = wp.from_gravity_x,
+        .from_gravity_y = wp.from_gravity_y,
+        .stay_above_parent = wp.stay_above_parent,
+    };
+
     // měřítko podle rodiče
     const float scale_val = dvui_widget_screen_rect_scale(dvui_parent_get(), (dvui_Rect){0}).s / dvui_window_natural_scale();
-    dvui_Options opts = opts_in;
-    if (opts.min_size_content.has) opts.min_size_content.v = dvui_size_scale(opts.min_size_content.v, scale_val);
+    if (dvui_options_has(&opts, DVUI_BIT(min_size_content))) opts.min_size_content = dvui_size_scale(opts.min_size_content, scale_val);
 
-    const dvui_Options defaults = {.name = "Floating"};
     // Zadaný options.rect zabrání volání rectFor/minSizeForChild rodiče –
-    // jsme mimo normální layout.
-    const dvui_Options rect_opt = {.rect = DVUI_SOME(opts.rect.has ? opts.rect.v : (dvui_Rect){0})};
+    // jsme mimo normální layout (nezadaný rect = {0}).
+    opts.set |= DVUI_BIT(rect);
     *self = (dvui_FloatingWidget){
         .scale_val = scale_val,
         .init_opts = init_opts,
-        .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){.subwindow = true}, dvui_options_override(dvui_options_override(defaults, opts), rect_opt)),
+        .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){.subwindow = true}, opts),
     };
 
-    if (init_opts.from.has) {
+    if (init_opts.has_from) {
         dvui_Size ms;
         if (dvui_min_size_get(self->wd.id, &ms)) {
-            const float gx = init_opts.has_from_gravity ? init_opts.from_gravity_x : 0.5f;
-            const float gy = init_opts.has_from_gravity ? init_opts.from_gravity_y : 0.5f;
-            const dvui_Point npt = dvui_rect_scale_point_from_physical(dvui_window_rect_scale(), init_opts.from.v);
+            const float gx = init_opts.from_gravity_x;
+            const float gy = init_opts.from_gravity_y;
+            const dvui_Point npt = dvui_rect_scale_point_from_physical(dvui_window_rect_scale(), init_opts.from);
             dvui_Rect start = dvui_rect_to_size(dvui_rect_from_point(npt), ms);
             start.x -= start.w * (1.0f - gx);
             start.y -= start.h * (1.0f - gy);
@@ -73,7 +87,7 @@ void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_Flo
         const dvui_RectScale rs = dvui_widget_data_rect_scale(&self->wd);
         dvui_render_front_to_back_init_reset(&self->render_ftb);
         self->prev_window_info = dvui_subwindow_current_set(self->wd.id, nullptr);
-        dvui_subwindow_add(self->wd.id, self->wd.rect, rs.r, false, init_opts.no_stay_above_parent ? 0 : self->prev_window_info.id, !init_opts.no_mouse_events);
+        dvui_subwindow_add(self->wd.id, self->wd.rect, rs.r, false, init_opts.stay_above_parent ? self->prev_window_info.id : 0, init_opts.mouse_events);
         dvui_capture_mouse_maintain((dvui_CaptureMouse){.id = self->wd.id, .rect = rs.r, .subwindow_id = self->wd.id});
         self->prev_clip = dvui_clip_get();
         dvui_clip_set(dvui_window_rect_pixels()); // vystoupíme z ořezu rodiče
@@ -81,7 +95,7 @@ void dvui_floating_widget_init(dvui_FloatingWidget* self, dvui_Src src, dvui_Flo
     }
 
     dvui_widget_data_border_and_background(&self->wd, (dvui_BorderAndBackgroundOptions){0});
-    dvui_scale_widget_init(&self->scaler, DVUI_SRC, &self->scale_val, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
+    dvui_scale_widget_init(&self->scaler, DVUI_SRC, DVUI_PROPS(DVUI_P(scale, &self->scale_val), DVUI_EXPAND(DVUI_EXPAND_BOTH)));
 }
 
 void dvui_floating_widget_deinit(dvui_FloatingWidget* self) {
@@ -111,11 +125,16 @@ static dvui_FloatingTooltipWidget* tooltip_set(dvui_FloatingTooltipWidget* tt) {
     return ret;
 }
 
-dvui_Options dvui_floating_tooltip_widget_defaults = {
-    .name = "Tooltip",
-    .style = {.has = true, .v = DVUI_STYLE_CONTENT},
-    .border = {.has = true, .v = {1, 1, 1, 1}},
-    .background = {.has = true, .v = true},
+const dvui_Prop dvui_floating_tooltip_widget_defaults[] = {
+    DVUI_NAME("Tooltip"),
+    DVUI_STYLE(DVUI_STYLE_CONTENT),
+    DVUI_BORDER_ALL(1),
+    DVUI_BACKGROUND(true),
+    {0},
+};
+
+static const dvui_PropTag tooltip_tags[] = {
+    DVUI_PROP_active_rect, DVUI_PROP_position, DVUI_PROP_interactive, DVUI_PROP_tooltip_scale, DVUI_PROP_END,
 };
 
 FLOATING_VTABLE(dvui_FloatingTooltipWidget, tooltip)
@@ -125,26 +144,38 @@ dvui_WidgetData* dvui_floating_tooltip_widget_data(dvui_FloatingTooltipWidget* s
 
 // Ukáže se, když je myš v active_rect. Zmizí, když je myš mimo active_rect,
 // mimo tooltip a neukazuje se žádný vnořený tooltip.
-void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget* self, dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Options opts_in) {
-    // Do layoutu jde jen identita (id_extra) a rect; zbytek opts_in stylizuje
-    // obsah (viz self->options).
-    const dvui_Options wd_opts = {
-        .name = "FloatingTooltip",
-        .rect = DVUI_SOME(opts_in.rect.has ? opts_in.rect.v : (dvui_Rect){0}),
-        .id_extra = opts_in.id_extra,
+void dvui_floating_tooltip_widget_init(dvui_FloatingTooltipWidget* self, dvui_Src src, dvui_Props props) {
+    dvui_Options options;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("FloatingTooltip", dvui_floating_tooltip_widget_defaults, props, tooltip_tags, &options, &wp);
+    const dvui_FloatingTooltipInitOptions init_opts = {
+        .active_rect = wp.active_rect,
+        .position = wp.position,
+        .interactive = wp.interactive,
+        .has_scale = wp.has[DVUI_PROP_tooltip_scale],
+        .scale = wp.tooltip_scale,
     };
+
+    // Do layoutu jde jen identita (id_extra) a rect; zbytek stylizuje obsah
+    // (viz self->options).
+    const dvui_Options wd_opts = dvui_options_with(dvui_options_default(), DVUI_NAME("FloatingTooltip"), DVUI_RECT(options.rect),
+                                                   DVUI_ID_EXTRA(options.id_extra));
     *self = (dvui_FloatingTooltipWidget){
         .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){.subwindow = true}, wd_opts),
         // měřítko podle rodiče
-        .scale_val = init_opts.scale.has ? init_opts.scale.v : dvui_widget_screen_rect_scale(dvui_parent_get(), (dvui_Rect){0}).s / dvui_window_natural_scale(),
-        .options = dvui_options_override(dvui_floating_tooltip_widget_defaults, opts_in),
+        .scale_val = init_opts.has_scale ? init_opts.scale
+                                         : dvui_widget_screen_rect_scale(dvui_parent_get(), (dvui_Rect){0}).s / dvui_window_natural_scale(),
+        .options = options,
         .init_options = init_opts,
     };
 
-    if (self->options.min_size_content.has) self->options.min_size_content.v = dvui_size_scale(self->options.min_size_content.v, self->scale_val);
+    if (dvui_options_has(&self->options, DVUI_BIT(min_size_content))) {
+        self->options.min_size_content = dvui_size_scale(self->options.min_size_content, self->scale_val);
+    }
 
     // rect nepředáváme scaleru
-    self->options.rect = (dvui_OptRect){0};
+    self->options.rect = (dvui_Rect){0};
+    self->options.set &= ~DVUI_BIT(rect);
 
     const bool* showing = DVUI_DATA_GET(self->wd.id, "_showing", bool);
     if (showing) self->showing = *showing;
@@ -170,7 +201,8 @@ static void tooltip_install(dvui_FloatingTooltipWidget* self) {
     self->parent_tooltip = tooltip_set(self);
 
     // pozadí, okraj a padding kreslí scaler
-    dvui_scale_widget_init(&self->scaler, DVUI_SRC, &self->scale_val, dvui_options_override(self->options, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)}));
+    dvui_scale_widget_init(&self->scaler, DVUI_SRC,
+                          DVUI_PROPS(DVUI_P(scale, &self->scale_val), DVUI_OPTIONS(&self->options), DVUI_EXPAND(DVUI_EXPAND_BOTH)));
 }
 
 // DVUI: FloatingTooltipWidget.shown
@@ -261,13 +293,27 @@ void dvui_floating_tooltip_widget_deinit(dvui_FloatingTooltipWidget* self) {
 }
 
 // DVUI: dvui.tooltip – místo textu zástupce o velikosti content_size.
-void dvui_tooltip(dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_Size content_size, dvui_Options opts) {
-    const dvui_Options defaults = {.padding = DVUI_SOME(dvui_rect_all(6))};
-    const dvui_Options options = dvui_options_override(defaults, opts);
+void dvui_tooltip_impl(dvui_Src src, dvui_Props props) {
+    static const dvui_Prop defaults[] = {DVUI_PADDING_ALL(6), {0}};
+    static const dvui_PropTag tags[] = {
+        DVUI_PROP_active_rect, DVUI_PROP_position,   DVUI_PROP_interactive,
+        DVUI_PROP_tooltip_scale, DVUI_PROP_label_size, DVUI_PROP_END,
+    };
+    dvui_Options options;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("tooltip", defaults, props, tags, &options, &wp);
+
+    // tooltipu předáme Options a jeho vlastní vlastnosti (bez label_size)
+    dvui_Prop tt_props[DVUI_PROP_COUNT + 2];
+    tt_props[0] = (dvui_Prop)DVUI_OPTIONS(&options);
+    const size_t n = 1 + dvui_props_forward(&wp, tooltip_tags, tt_props + 1);
+    tt_props[n] = (dvui_Prop){0};
+
     dvui_FloatingTooltipWidget tt;
-    dvui_floating_tooltip_widget_init(&tt, src, init_opts, options);
+    dvui_floating_tooltip_widget_init(&tt, src, (dvui_Props){tt_props});
     if (dvui_floating_tooltip_widget_shown(&tt)) {
-        dvui_label_placeholder(DVUI_SRC, content_size, dvui_options_strip(options));
+        const dvui_Options label_opts = dvui_options_strip(options);
+        dvui_label_placeholder(DVUI_OPTIONS(&label_opts), DVUI_P(label_size, wp.label_size));
     }
     dvui_floating_tooltip_widget_deinit(&tt);
 }
@@ -276,12 +322,13 @@ void dvui_tooltip(dvui_Src src, dvui_FloatingTooltipInitOptions init_opts, dvui_
 // FloatingWindowWidget (DVUI: FloatingWindowWidget.zig)
 // ===========================================================================
 
-dvui_Options dvui_floating_window_widget_defaults = {
-    .name = "FloatingWindow",
-    .margin = {.has = true, .v = {2, 2, 2, 2}},
-    .border = {.has = true, .v = {1, 1, 1, 1}},
-    .background = {.has = true, .v = true},
-    .style = {.has = true, .v = DVUI_STYLE_WINDOW},
+const dvui_Prop dvui_floating_window_widget_defaults[] = {
+    DVUI_NAME("FloatingWindow"),
+    DVUI_MARGIN_ALL(2),
+    DVUI_BORDER_ALL(1),
+    DVUI_BACKGROUND(true),
+    DVUI_STYLE(DVUI_STYLE_WINDOW),
+    {0},
 };
 
 FLOATING_VTABLE(dvui_FloatingWindowWidget, fwin)
@@ -305,16 +352,38 @@ static dvui_Cursor drag_part_cursor(dvui_DragPart p) {
 }
 
 // DVUI: FloatingWindowWidget.init
-void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts) {
-    const dvui_Options options = dvui_options_override(dvui_floating_window_widget_defaults, opts);
+void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src src, dvui_Props props) {
+    static const dvui_PropTag tags[] = {
+        DVUI_PROP_modal,     DVUI_PROP_modal_alpha, DVUI_PROP_rect_io,                  DVUI_PROP_center_on,
+        DVUI_PROP_open_flag, DVUI_PROP_resize,      DVUI_PROP_stay_above_parent_window, DVUI_PROP_window_avoid,
+        DVUI_PROP_END,
+    };
+    dvui_Options options;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("FloatingWindow", dvui_floating_window_widget_defaults, props, tags, &options, &wp);
+    const dvui_FloatingWindowInitOptions init_opts = {
+        .modal = wp.modal,
+        .has_modal_alpha = wp.has[DVUI_PROP_modal_alpha],
+        .modal_alpha = wp.modal_alpha,
+        .rect = wp.rect_io,
+        .has_center_on = wp.has[DVUI_PROP_center_on],
+        .center_on = wp.center_on,
+        .open_flag = wp.open_flag,
+        .resize = wp.resize,
+        .stay_above_parent_window = wp.stay_above_parent_window,
+        .window_avoid = wp.window_avoid,
+    };
+
     dvui_Options box_options = options;
-    box_options.id_extra = (dvui_OptUsize){0};
-    box_options.rect = (dvui_OptRect){0}; // rect od uživatele nepatří BoxWidgetu
+    box_options.id_extra = 0;
+    box_options.rect = (dvui_Rect){0}; // rect od uživatele nepatří BoxWidgetu
+    box_options.set &= ~(DVUI_BIT(id_extra) | DVUI_BIT(rect));
 
     *self = (dvui_FloatingWindowWidget){
         .options = box_options,
         .wd = dvui_widget_data_init(src, (dvui_WidgetDataInitOptions){.subwindow = true},
-                                    (dvui_Options){.id_extra = opts.id_extra, .rect = DVUI_SOME((dvui_Rect){0}), .name = options.name}),
+                                    dvui_options_with(dvui_options_default(), DVUI_ID_EXTRA(options.id_extra),
+                                                      DVUI_RECT((dvui_Rect){0}), DVUI_NAME(options.name))),
         .init_options = init_opts,
     };
     dvui_WidgetData* wd = &self->wd;
@@ -323,7 +392,7 @@ void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src 
     const dvui_Rect* stored = DVUI_DATA_GET(wd->id, "_rect", dvui_Rect);
     wd->rect = stored ? *stored : (dvui_Rect){0};
     if (init_opts.rect) wd->rect = *init_opts.rect;
-    if (dvui_first_frame(wd->id) && opts.rect.has) wd->rect = opts.rect.v;
+    if (dvui_first_frame(wd->id) && dvui_options_has(&options, DVUI_BIT(rect))) wd->rect = options.rect;
 
     const bool* as = DVUI_DATA_GET(wd->id, "_auto_size", bool);
     if (as) {
@@ -354,7 +423,7 @@ void dvui_floating_window_widget_init(dvui_FloatingWindowWidget* self, dvui_Src 
         if (self->auto_pos) {
             // vycentrujeme na zadaný obdélník nebo na rodičovské subwindow
             self->auto_pos = false;
-            const dvui_RectNatural centering = init_opts.center_on.has ? init_opts.center_on.v : cw->subwindows.current_rect;
+            const dvui_RectNatural centering = init_opts.has_center_on ? init_opts.center_on : cw->subwindows.current_rect;
             wd->rect.x = centering.x + (centering.w - wd->rect.w) / 2;
             wd->rect.y = centering.y + (centering.h - wd->rect.h) / 2;
 
@@ -444,7 +513,7 @@ void dvui_floating_window_widget_draw_background(dvui_FloatingWindowWidget* self
         dvui_render_fill_rect(dvui_window_rect_pixels(), col, false);
     }
     self->has_layout = true;
-    dvui_box_widget_init(&self->layout, DVUI_SRC, (dvui_BoxInitOptions){0}, dvui_options_override(self->options, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)}));
+    dvui_box_widget_init(&self->layout, DVUI_SRC, DVUI_PROPS(DVUI_OPTIONS(&self->options), DVUI_EXPAND(DVUI_EXPAND_BOTH)));
     dvui_box_widget_draw_background(&self->layout);
 }
 
@@ -708,9 +777,9 @@ void dvui_floating_window_widget_deinit(dvui_FloatingWindowWidget* self) {
     if (dvui_widget_is_allocated(self)) dvui_widget_free(self);
 }
 
-dvui_FloatingWindowWidget* dvui_floating_window(dvui_Src src, dvui_FloatingWindowInitOptions init_opts, dvui_Options opts) {
+dvui_FloatingWindowWidget* dvui_floating_window_impl(dvui_Src src, dvui_Props props) {
     dvui_FloatingWindowWidget* ret = dvui_widget_alloc(sizeof *ret);
-    dvui_floating_window_widget_init(ret, src, init_opts, opts);
+    dvui_floating_window_widget_init(ret, src, props);
     dvui_floating_window_widget_process_events_before(ret);
     dvui_floating_window_widget_draw_background(ret);
     return ret;
@@ -722,24 +791,18 @@ dvui_FloatingWindowWidget* dvui_floating_window(dvui_Src src, dvui_FloatingWindo
 
 // Zavírací tlačítko podle DVUI buttonIcon; místo ikony je čtvercový zástupce.
 static bool close_button(dvui_Src src, dvui_Options opts) {
-    const dvui_Options defaults = {.padding = DVUI_SOME(dvui_rect_all(4))};
     dvui_ButtonWidget bw;
-    dvui_button_widget_init(&bw, src, (dvui_ButtonInitOptions){0}, dvui_options_override(defaults, opts));
+    dvui_button_widget_init(&bw, src, DVUI_PROPS(DVUI_PADDING_ALL(4), DVUI_OPTIONS(&opts)));
     dvui_button_widget_process_events(&bw);
     dvui_button_widget_draw_background(&bw);
 
     // „ikona“: plný čtverec v barvě textu, velikost jako výška textu
     const dvui_Options style = dvui_button_widget_style(&bw);
-    const dvui_Options icon_opts = dvui_options_override(dvui_options_override(dvui_options_strip(opts), style),
-                                                         (dvui_Options){
-                                                             .gravity_x = DVUI_SOME(0.5f),
-                                                             .gravity_y = DVUI_SOME(0.5f),
-                                                             .min_size_content = DVUI_SOME(((dvui_Size){dvui_font_size_m(1, 1).h, dvui_font_size_m(1, 1).h})),
-                                                             .expand = DVUI_SOME(DVUI_EXPAND_RATIO),
-                                                             .background = DVUI_SOME(true),
-                                                             .color_fill = DVUI_SOME(dvui_options_color(&bw.wd.options, DVUI_COLOR_TEXT)),
-                                                         });
-    dvui_spacer(DVUI_SRC, icon_opts);
+    const dvui_Options icon_style = dvui_options_override(dvui_options_strip(opts), style);
+    const float icon = dvui_font_size_m(1, 1).h;
+    dvui_spacer(DVUI_OPTIONS(&icon_style), DVUI_GRAVITY_X(0.5f), DVUI_GRAVITY_Y(0.5f), DVUI_MIN_SIZE(icon, icon),
+                DVUI_EXPAND(DVUI_EXPAND_RATIO), DVUI_BACKGROUND(true),
+                DVUI_FILL(dvui_options_color(&bw.wd.options, DVUI_COLOR_TEXT)));
 
     const bool click = dvui_button_widget_clicked(&bw);
     dvui_button_widget_draw_focus(&bw);
@@ -747,25 +810,24 @@ static bool close_button(dvui_Src src, dvui_Options opts) {
     return click;
 }
 
-dvui_RectPhysical dvui_window_header(dvui_WindowHeaderOptions options) {
-    dvui_OverlayWidget* over = dvui_overlay(DVUI_SRC, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .name = "WindowHeader"});
+dvui_RectPhysical dvui_window_header_impl(dvui_Props props) {
+    dvui_Options options;
+    dvui_WidgetProps wp;
+    dvui_props_resolve("windowHeader", nullptr, props, DVUI_TAGS(DVUI_PROP_label_size, DVUI_PROP_open_flag), &options, &wp);
+    (void)options; // DVUI windowHeader nemá Options
+
+    dvui_OverlayWidget* over = dvui_overlay(DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL), DVUI_NAME("WindowHeader"));
 
     // titulek (zde jen zástupce o velikosti textu)
-    dvui_label_placeholder(DVUI_SRC, options.title_size,
-                           (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL), .padding = DVUI_SOME(((dvui_Rect){6, 6, 6, 4}))});
+    dvui_label_placeholder(DVUI_P(label_size, wp.label_size), DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL), DVUI_PADDING({6, 6, 6, 4}));
 
-    dvui_BoxWidget* hbox = dvui_box(DVUI_SRC, (dvui_BoxInitOptions){.dir = DVUI_HORIZONTAL}, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_BOTH)});
+    dvui_BoxWidget* hbox = dvui_box(DVUI_DIR(DVUI_HORIZONTAL), DVUI_EXPAND(DVUI_EXPAND_BOTH));
 
-    if (options.open_flag) {
+    if (wp.open_flag) {
         // DVUI button_order .cancel_ok → zavírací tlačítko vlevo
-        const dvui_Options opts = {
-            .padding = DVUI_SOME(dvui_rect_all(2)),
-            .margin = DVUI_SOME(dvui_rect_all(2)),
-            .gravity_y = DVUI_SOME(0.5f),
-            .expand = DVUI_SOME(DVUI_EXPAND_RATIO),
-            .gravity_x = DVUI_SOME(0.0f),
-        };
-        if (close_button(DVUI_SRC, opts)) *options.open_flag = false;
+        const dvui_Options opts = dvui_options_with(dvui_options_default(), DVUI_PADDING_ALL(2), DVUI_MARGIN_ALL(2),
+                                                    DVUI_GRAVITY_Y(0.5f), DVUI_EXPAND(DVUI_EXPAND_RATIO), DVUI_GRAVITY_X(0.0f));
+        if (close_button(DVUI_SRC, opts)) *wp.open_flag = false;
     }
 
     dvui_box_widget_deinit(hbox);
@@ -788,7 +850,7 @@ dvui_RectPhysical dvui_window_header(dvui_WindowHeaderOptions options) {
     dvui_RectPhysical ret = dvui_widget_data_rect_scale(&over->wd).r;
     dvui_overlay_widget_deinit(over);
 
-    const dvui_WidgetData swd = dvui_separator(DVUI_SRC, (dvui_Options){.expand = DVUI_SOME(DVUI_EXPAND_HORIZONTAL)});
+    const dvui_WidgetData swd = dvui_separator(DVUI_EXPAND(DVUI_EXPAND_HORIZONTAL));
     ret.h += dvui_widget_data_rect_scale(&swd).r.h;
     return ret;
 }
