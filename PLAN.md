@@ -111,7 +111,9 @@ jednoho výchozího (barvy podle Adwaita Light). Podrobnosti v
 
 ### Stav
 
-Hotovo a ověřeno na Linuxu (GCC 13, Clang 18, ASan/UBSan, demo přes Vulkan –
+Od přechodu na `#embed` (krok 3 ve `shared/`) se ověřuje s Clangem 19
+(ASan/UBSan, bez varování); GCC 15 v prostředí není k dispozici.
+Původně ověřeno na Linuxu (GCC 13, Clang 18, ASan/UBSan, demo přes Vulkan –
 lavapipe pod Xvfb). Windows a macOS zatím nejsou otestované.
 
 API vlastností widgetů je seznam značek (`dvui_Prop`) – jeden seznam pro
@@ -139,7 +141,7 @@ shared/
   src/geometry.c               Rect, Size, Point, RectScale, Color
   src/data.c                   aréna, hash mapa, datové úložiště
   src/backends/sdl3gpu.c, testing.c
-  shaders/, tools/embed.c
+  shaders/                     předkompilované shadery z DVUI (vkládá je sdl3gpu.c přes #embed)
 ```
 
 - [x] Krok 1: přesun sdíleného kódu z dvui-layout do `shared/`; dvui-layout
@@ -147,6 +149,9 @@ shared/
 - [x] Krok 2: `dvui_Backend.sleep`, `dvui_sdl3gpu_wait_event_timeout`
       s `uint32_t` a návratovou hodnotou (kvůli `Window.waitTime`
       v dvui-animation).
+- [x] Krok 3: shadery přes C23 `#embed` místo nástroje `tools/embed.c`;
+      minimum překladačů zvednuto na GCC ≥ 15 a Clang ≥ 19 (rozhodnutí
+      vlastníka). Ověřeno jen s Clangem 19 – GCC 15 v prostředí není.
 
 ## Projekt dvui-animation
 
@@ -212,4 +217,5 @@ dvui-animation/
 
 ### Stav
 
-Hotovo a ověřeno na Linuxu. Windows a macOS zatím nejsou otestované.
+Hotovo a ověřeno na Linuxu (od přechodu na `#embed` jen Clang 19).
+Windows a macOS zatím nejsou otestované.

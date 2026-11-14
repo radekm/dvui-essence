@@ -45,7 +45,7 @@ datové úložiště, backendy) popisuje [shared/README.md](../shared/README.md)
 
 ## Sestavení
 
-Potřeba: Meson ≥ 1.3, Ninja, překladač C23 (GCC ≥ 13 nebo Clang ≥ 18;
+Potřeba: Meson ≥ 1.4, Ninja, překladač C23 s `#embed` (GCC ≥ 15 nebo Clang ≥ 19;
 na Windows Clang nebo MinGW-GCC) a pro backend a demo **SDL 3** v systému.
 
 ```sh

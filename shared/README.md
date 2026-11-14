@@ -19,10 +19,9 @@ include/dvui/backend_testing.h   testovací backend bez GPU
 src/base.c                       id (dvui_id_extend, dvui_id_update), pomocné funkce vstupu
 src/geometry.c                   Rect, Size, Point, RectScale, Color (vč. dvui_color_lighten)
 src/data.c                       aréna, hash mapa, datové úložiště
-src/backends/sdl3gpu.c           backend SDL 3 GPU (DVUI: backends/sdl3gpu.zig)
+src/backends/sdl3gpu.c           backend SDL 3 GPU (DVUI: backends/sdl3gpu.zig); shadery vkládá přes #embed
 src/backends/testing.c           testovací backend (DVUI: backends/testing.zig)
 shaders/                         předkompilované shadery z DVUI (SPIR-V, MSL, DXIL)
-tools/embed.c                    nástroj pro build: vloží shader do C pole (náhrada #embed)
 ```
 
 ### `dvui/base.h`
@@ -80,11 +79,10 @@ core_sources = files(
   # … vlastní soubory projektu
 )
 
-# backend SDL 3 GPU (jen když je SDL 3 v systému)
-embed = executable('embed', shared_dir / 'tools/embed.c', native: true)
-# pro každý shader: custom_target s input: shared_dir / 'shaders/default.<stage>.<fmt>'
-#   a command: [embed, '@INPUT@', '@OUTPUT@', 'dvui_shader_<stage>_<fmt>']
-sdl3gpu_lib = static_library('…-sdl3gpu', shared_dir / 'src/backends/sdl3gpu.c', shader_sources, …)
+# backend SDL 3 GPU (jen když je SDL 3 v systému); shadery z shaders/
+# vkládá sdl3gpu.c přes #embed (cesta relativní k sdl3gpu.c), build nic
+# dalšího nepotřebuje
+sdl3gpu_lib = static_library('…-sdl3gpu', shared_dir / 'src/backends/sdl3gpu.c', …)
 ```
 
 Celý příklad je v [dvui-layout/meson.build](../dvui-layout/meson.build).

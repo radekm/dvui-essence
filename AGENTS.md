@@ -24,7 +24,7 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
   id, `DVUI_SRC`, geometrie, barvy, vstupní výčty, `dvui_Backend`
   a deklarace funkcí okna volaných backendem), geometrii a barvy, id,
   arénu, hash mapu, datové úložiště (`dvui_DataStore`), backendy SDL 3 GPU
-  a testovací, shadery a nástroj `tools/embed.c`. `shared/` nemá vlastní
+  a testovací a shadery. `shared/` nemá vlastní
   `meson.build`; projekty jeho soubory uvádějí cestou `../shared/…`.
 - Každý projekt má **vlastní** (zkopírovaný a upravený) zbytek: `dvui.h`,
   okno (`window.c`), WidgetData, vlastnosti widgetů (seznam značek
@@ -43,11 +43,12 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 
 ## Jazyk a sestavení
 
-- Nový kód se píše v **C23** (`c_std=c23`; v Mesonu `c23,c2x`, protože GCC 13 zná
-  C23 jen pod starším jménem `c2x`). Používej jen tu část C23, kterou
-  podporuje GCC ≥ 13 a Clang ≥ 18 (bool/true/false jako klíčová slova, `nullptr`,
-  `static_assert`, `[[nodiscard]]`, `typeof`). Nepoužívej `#embed` (zatím ho
-  neumí všechny cílové překladače).
+- Nový kód se píše v **C23** (`c_std=c23`, Meson ≥ 1.4). Minimální překladače
+  jsou **GCC ≥ 15 a Clang ≥ 19** – první verze s `#embed`. Používej jen tu
+  část C23, kterou obě podporují (bool/true/false jako klíčová slova,
+  `nullptr`, `static_assert`, `[[nodiscard]]`, `typeof`, `alignas`, `#embed`).
+- Binární data (shadery) se do programu vkládají přes `#embed`, ne
+  generovaným kódem ani vlastními nástroji v buildu.
 - Build systém je **Meson**.
 - Cílové platformy: **Linux, Windows (Clang nebo MinGW-GCC), macOS**. Nepoužívej
   rozšíření specifická pro jeden překladač, pokud nejsou schovaná za `#if`.
@@ -66,8 +67,8 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
   | SDL 3 | systém | jen backend a demo; jádro projektů na SDL nezávisí |
 - Předkompilované shadery pro SDL3 GPU jsou převzaté z DVUI
   (`dvui-original/src/backends/sdl3gpu/compiled/`), nejsou to nové závislosti.
-  Leží v `shared/shaders/` a do C se vkládají vlastním malým nástrojem
-  `shared/tools/embed.c`.
+  Leží v `shared/shaders/` a `shared/src/backends/sdl3gpu.c` je vkládá přes
+  `#embed`.
 
 ## Věrnost DVUI
 

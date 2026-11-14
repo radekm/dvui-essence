@@ -39,7 +39,7 @@ port DVUI (commit `2efa35e`, kopie je v `../dvui-original`).
 
 ## Sestavení
 
-Potřeba: Meson ≥ 1.3, Ninja, překladač C23 (GCC ≥ 13 nebo Clang ≥ 18;
+Potřeba: Meson ≥ 1.4, Ninja, překladač C23 s `#embed` (GCC ≥ 15 nebo Clang ≥ 19;
 na Windows Clang nebo MinGW-GCC) a pro backend a demo **SDL 3** v systému
 (hledá se přes pkg-config/CMake jako `sdl3`).
 
@@ -123,7 +123,6 @@ uvádějí cestou `../shared/…`), viz [shared/README.md](../shared/README.md):
 ../shared/include/dvui/backend_*.h        backend SDL 3 GPU a testovací backend
 ../shared/src/                            id, geometrie a barvy, data, backendy
 ../shared/shaders/                        předkompilované shadery z DVUI
-../shared/tools/embed.c                   vložení shaderů do C (náhrada #embed)
 ```
 
 ## Odchylky od DVUI

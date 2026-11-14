@@ -9,19 +9,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-// vložené shadery (vygeneruje tools/embed.c při buildu)
-extern const unsigned char dvui_shader_vertex_spv[];
-extern const size_t dvui_shader_vertex_spv_size;
-extern const unsigned char dvui_shader_fragment_spv[];
-extern const size_t dvui_shader_fragment_spv_size;
-extern const unsigned char dvui_shader_vertex_msl[];
-extern const size_t dvui_shader_vertex_msl_size;
-extern const unsigned char dvui_shader_fragment_msl[];
-extern const size_t dvui_shader_fragment_msl_size;
-extern const unsigned char dvui_shader_vertex_dxil[];
-extern const size_t dvui_shader_vertex_dxil_size;
-extern const unsigned char dvui_shader_fragment_dxil[];
-extern const size_t dvui_shader_fragment_dxil_size;
+// Shadery převzaté z DVUI (shared/shaders/) vložené přes C23 #embed. Cesta je
+// relativní k tomuto souboru. Zarovnání kvůli SPIR-V (slova po 4 bajtech).
+alignas(8) static const unsigned char dvui_shader_vertex_spv[] = {
+#embed "../../shaders/default.vertex.spv"
+};
+static const size_t dvui_shader_vertex_spv_size = sizeof dvui_shader_vertex_spv;
+alignas(8) static const unsigned char dvui_shader_vertex_msl[] = {
+#embed "../../shaders/default.vertex.msl"
+};
+static const size_t dvui_shader_vertex_msl_size = sizeof dvui_shader_vertex_msl;
+alignas(8) static const unsigned char dvui_shader_vertex_dxil[] = {
+#embed "../../shaders/default.vertex.dxil"
+};
+static const size_t dvui_shader_vertex_dxil_size = sizeof dvui_shader_vertex_dxil;
+alignas(8) static const unsigned char dvui_shader_fragment_spv[] = {
+#embed "../../shaders/default.fragment.spv"
+};
+static const size_t dvui_shader_fragment_spv_size = sizeof dvui_shader_fragment_spv;
+alignas(8) static const unsigned char dvui_shader_fragment_msl[] = {
+#embed "../../shaders/default.fragment.msl"
+};
+static const size_t dvui_shader_fragment_msl_size = sizeof dvui_shader_fragment_msl;
+alignas(8) static const unsigned char dvui_shader_fragment_dxil[] = {
+#embed "../../shaders/default.fragment.dxil"
+};
+static const size_t dvui_shader_fragment_dxil_size = sizeof dvui_shader_fragment_dxil;
 
 // DVUI: sdl3gpu.zig – Vertex (pozice float4 v NDC, barva float4, uv float2)
 typedef struct GpuVertex {

@@ -3,9 +3,9 @@ project(
   'c',
   version: '0.1.0',
   license: 'MIT',
-  meson_version: '>=1.3.0',
-  # c2x je jen starší jméno C23 (GCC 13); Meson vybere první podporované.
-  default_options: ['c_std=c23,c2x', 'warning_level=3', 'buildtype=debugoptimized'],
+  meson_version: '>=1.4.0',
+  # C23 s #embed: GCC >= 15, Clang >= 19
+  default_options: ['c_std=c23', 'warning_level=3', 'buildtype=debugoptimized'],
 )
 
 cc = meson.get_compiler('c')
@@ -67,24 +67,10 @@ test('layout', test_layout)
 sdl3_dep = dependency('sdl3', required: get_option('sdl3'))
 
 if sdl3_dep.found()
-  # Shadery převzaté z DVUI vložíme do C polí malým nástrojem z tools/.
-  embed = executable('embed', shared_dir / 'tools/embed.c', native: true)
-  shader_sources = []
-  foreach stage : ['vertex', 'fragment']
-    foreach fmt : ['spv', 'msl', 'dxil']
-      shader_sources += custom_target(
-        'shader_@0@_@1@'.format(stage, fmt),
-        input: shared_dir / 'shaders/default.@0@.@1@'.format(stage, fmt),
-        output: 'shader_@0@_@1@.c'.format(stage, fmt),
-        command: [embed, '@INPUT@', '@OUTPUT@', 'dvui_shader_@0@_@1@'.format(stage, fmt)],
-      )
-    endforeach
-  endforeach
-
+  # Shadery z ../shared/shaders vkládá sdl3gpu.c přes C23 #embed.
   dvui_sdl3gpu_lib = static_library(
     'dvui-layout-sdl3gpu',
     shared_dir / 'src/backends/sdl3gpu.c',
-    shader_sources,
     include_directories: inc,
     dependencies: [sdl3_dep],
   )
