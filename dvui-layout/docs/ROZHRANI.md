@@ -36,8 +36,9 @@ while (open) {
     dvui_window_begin(win, time_ns);                 // DVUI: Window.begin
     /* přidání událostí: dvui_window_add_event_* nebo dvui_sdl3gpu_add_all_events */
     /* widgety */
-    int64_t wait = dvui_window_end(win);             // DVUI: Window.end
+    int32_t wait = dvui_window_end(win);             // DVUI: Window.end
     /* wait == 0 → hned další snímek; -1 → čekat na událost */
+    dvui_sdl3gpu_wait_event_timeout(backend, wait < 0 ? UINT32_MAX : (uint32_t)wait);
 }
 dvui_window_destroy(win);
 ```
@@ -427,6 +428,7 @@ typedef struct dvui_Backend {
     void (*set_cursor)(void* ctx, dvui_Cursor cursor);
     void (*render_present)(void* ctx);
     int64_t (*nano_time)(void* ctx);
+    void (*sleep)(void* ctx, uint64_t ns);
 } dvui_Backend;
 ```
 
@@ -441,11 +443,14 @@ typedef struct dvui_Backend {
 | `set_cursor` | v `end` | nastavit kurzor |
 | `render_present` | na konci `end` | zobrazit snímek |
 | `nano_time` | program (pro `dvui_window_begin`) | monotónní čas v ns |
+| `sleep` | dvui-layout nevolá (používá ji `Window.waitTime` v dvui-animation) | uspat vlákno na `ns` nanosekund |
 
 **SDL3 GPU** (`../shared/include/dvui/backend_sdl3gpu.h`): `dvui_sdl3gpu_create`
 (okno, GPU zařízení, pipeline, shadery), `dvui_sdl3gpu_backend`,
 `dvui_sdl3gpu_add_all_events` / `dvui_sdl3gpu_add_event` (převod událostí
-SDL), `dvui_sdl3gpu_wait_event_timeout`, `dvui_sdl3gpu_destroy`.
+SDL), `dvui_sdl3gpu_wait_event_timeout(b, timeout_micros)` (čekání na
+událost; `UINT32_MAX` = bez limitu, 0 = nečekat; vrací, zda čekání
+přerušila událost), `dvui_sdl3gpu_destroy`.
 
 **Testovací backend** (`../shared/include/dvui/backend_testing.h`): bez GPU;
 velikost okna zadává test, vykreslené obdélníky ukládá do `draws`

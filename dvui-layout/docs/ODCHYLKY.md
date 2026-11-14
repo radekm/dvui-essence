@@ -243,11 +243,14 @@ je celý: hlavičky, auto-size, roztahování a zmenšování sloupců, změna
 
 ## 7. Změněné chování
 
-- **`dvui_window_end`** vrací `0` („udělej hned další snímek“) nebo `−1`
-  („čekej na událost“). DVUI vrací `?u32` – kolik mikrosekund má uplynout
+- **`dvui_window_end`** vrací `int32_t`: `0` („udělej hned další snímek“)
+  nebo `−1` („čekej na událost“, DVUI `null`). DVUI vrací `?u32` – kolik mikrosekund má uplynout
   mezi tímto a dalším `begin` (0 = hned, jiné hodnoty kvůli animacím
   a časovačům), nebo `null` („čekej na událost“). Bez animací a časovačů
-  jiné hodnoty než 0 a `null` nevznikají. Chybí i `Window.waitTime` (omezení FPS).
+  jiné hodnoty než 0 a `null` nevznikají. Chybí i `Window.waitTime` (omezení FPS),
+  proto program převádí −1 na `UINT32_MAX` pro
+  `dvui_sdl3gpu_wait_event_timeout` sám (DVUI to dělá ve `waitTime`).
+  Animace a `waitTime` má projekt dvui-animation.
 - **`Color.lighten`**: DVUI mění světlost v HSLuv, zde se mění L v CIE
   LCh(uv) se zachovaným chroma. Pro šedé barvy je výsledek stejný; pro
   barevné se může nepatrně lišit odstín ztmavené barvy (hover, press).
@@ -287,7 +290,8 @@ níže proto platí pro všechny projekty.
 **Rozhraní backendu** (`dvui_Backend`) má jen funkce, které layout
 a kreslení obdélníků potřebují: `begin`, `end`, `pixel_size`,
 `window_size`, `content_scale`, `draw_clipped_triangles` (bez textury),
-`set_cursor`, `render_present`, `nano_time`. Chybí textury, render
+`set_cursor`, `render_present`, `nano_time`, `sleep` (dvui-layout ji
+nevolá). Chybí textury, render
 targety, schránka, `textInputRect`, `openURL`, `refresh` z jiného vlákna,
 AccessKit a správa víc oken.
 

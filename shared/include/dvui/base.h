@@ -260,6 +260,9 @@ typedef struct dvui_Backend {
     void (*set_cursor)(void* ctx, dvui_Cursor cursor);
     void (*render_present)(void* ctx);
     int64_t (*nano_time)(void* ctx);
+    // DVUI: Backend.sleep – uspí vlákno na `ns` nanosekund (0 = jen předá
+    // procesor). Volá ji Window.waitTime / beginWait; může být NULL.
+    void (*sleep)(void* ctx, uint64_t ns);
 } dvui_Backend;
 
 // ---------------------------------------------------------------------------

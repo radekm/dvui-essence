@@ -77,7 +77,8 @@ while (open) {
     }
     dvui_box_widget_deinit(row);
 
-    dvui_sdl3gpu_wait_event_timeout(backend, dvui_window_end(win));
+    const int32_t wait = dvui_window_end(win);   // 0 = hned, −1 = čekat na událost
+    dvui_sdl3gpu_wait_event_timeout(backend, wait < 0 ? UINT32_MAX : (uint32_t)wait);
 }
 
 dvui_window_destroy(win);
@@ -149,7 +150,7 @@ stručně:
   z [docs/NEIMPLEMENTOVANO.md](docs/NEIMPLEMENTOVANO.md).
 - **Změněno:** jediné téma (Adwaita Light, nenastavená barva =
   `{0, 0, 0, 0}`), `Color.lighten` v CIE LCh(uv) místo HSLuv,
-  `dvui_window_end` vrací jen 0 / −1, datové úložiště kontroluje typ jen
+  `dvui_window_end` vrací jen 0 / −1 (bez animací), chybí `waitTime`, datové úložiště kontroluje typ jen
   velikostí.
 - **Paměť:** bez vlastních alokátorů (`malloc`/`free`, vlastní aréna
   snímku), při nedostatku paměti `abort()`.

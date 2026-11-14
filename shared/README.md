@@ -117,13 +117,19 @@ a vytvořením prvního widgetu.
 
 Okno naopak volá backend přes `dvui_Backend` (`begin`, `end`,
 `pixel_size`, `window_size`, `content_scale`, `draw_clipped_triangles`,
-`set_cursor`, `render_present`, `nano_time`). Kdy se která funkce volá,
+`set_cursor`, `render_present`, `nano_time`, `sleep`). `sleep` používá jen
+`Window.waitTime` / `beginWait` (dvui-animation); v testovacím backendu
+nic nedělá. Kdy se která funkce volá,
 popisuje [dvui-layout/docs/ROZHRANI.md, kap. 10](../dvui-layout/docs/ROZHRANI.md#10-backend).
 
 Navíc backend SDL 3 GPU nabízí programu `dvui_sdl3gpu_add_all_events`,
-`dvui_sdl3gpu_add_event` a `dvui_sdl3gpu_wait_event_timeout(b, micros)`,
-kam program předá výsledek `dvui_window_end` (0 = nečekat, −1 = čekat na
-událost, jinak počet mikrosekund).
+`dvui_sdl3gpu_add_event` a `dvui_sdl3gpu_wait_event_timeout(b,
+timeout_micros)` (DVUI `waitEventTimeout`): `0` = nečekat, `UINT32_MAX` =
+čekat na událost bez limitu, jinak nejvýš tolik mikrosekund. Vrací `true`,
+když čekání přerušila událost. Projekty vracejí z `dvui_window_end`
+`int32_t` (−1 = DVUI `null`); dvui-animation ho převádí přes
+`dvui_window_wait_time` (DVUI `Window.waitTime`), dvui-layout převodem
+`−1 → UINT32_MAX` přímo v programu.
 
 ## Odchylky od DVUI
 

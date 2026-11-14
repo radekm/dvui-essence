@@ -40,9 +40,11 @@ bool dvui_sdl3gpu_add_event(dvui_Sdl3GpuBackend* b, dvui_Window* win, const SDL_
 // DVUI: SDLBackend.addAllEvents – zpracuje všechny čekající události.
 // Vrací true, pokud přišel požadavek na ukončení (SDL_EVENT_QUIT).
 bool dvui_sdl3gpu_add_all_events(dvui_Sdl3GpuBackend* b, dvui_Window* win);
-// DVUI: SDLBackend.waitEventTimeout – `micros` z dvui_window_end
-// (0 = nečekat, -1 = čekat na událost).
-void dvui_sdl3gpu_wait_event_timeout(dvui_Sdl3GpuBackend* b, int64_t micros);
+// DVUI: SDLBackend.waitEventTimeout – čeká na událost nejvýš
+// `timeout_micros` mikrosekund (0 = nečekat, UINT32_MAX = čekat bez limitu;
+// typicky výsledek Window.waitTime). Vrací true, pokud čekání přerušila
+// událost (předává se do Window.beginWait).
+bool dvui_sdl3gpu_wait_event_timeout(dvui_Sdl3GpuBackend* b, uint32_t timeout_micros);
 
 #ifdef __cplusplus
 }

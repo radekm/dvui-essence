@@ -53,6 +53,10 @@ samotné widgety.
 
 ### 2.1 Animace a časovače
 
+> Animace, časovače, `waitTime` a AnimateWidget jsou implementované
+> v samostatném projektu [dvui-animation](../../dvui-animation/README.md).
+> Níže je původní rozbor pro dvui-layout.
+
 DVUI: `dvui.animation`, `dvui.animationGet`, `Animation` (`start_val`,
 `end_val`, `start_time`, `end_time`, `easing`), `easing.zig`, `dvui.timer`,
 `timerGet`, `timerDone`. Potřebují je Paned (sbalení), Animate, Tree
@@ -69,8 +73,8 @@ Co přidat:
 - `dvui_window_end` dnes vrací jen 0 / −1. S animacemi musí vracet **čas
   do konce nejbližší animace nebo časovače** (DVUI `Window.end` vrací
   `?u32` mikrosekund), aby
-  backend věděl, kdy probudit smyčku. Demo i backend s tím už počítají
-  (`dvui_sdl3gpu_wait_event_timeout`);
+  backend věděl, kdy probudit smyčku. Backend s tím už počítá
+  (`dvui_sdl3gpu_wait_event_timeout`, `sleep`);
 - `easing.zig` (240 řádků čistých funkcí) – stačí přepsat jen použité
   (`linear`, `outQuad`, `inOutQuad`, …);
 - testy: testovací backend musí umět posunout čas (už umí – `step` přičítá

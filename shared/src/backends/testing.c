@@ -43,6 +43,11 @@ static void tb_draw(void* ctx, const dvui_Vertex* vtx, size_t vtx_count, const u
 static void tb_set_cursor(void* ctx, dvui_Cursor cursor) { ((dvui_TestingBackend*)ctx)->cursor = cursor; }
 static void tb_render_present(void* ctx) { (void)ctx; }
 static int64_t tb_nano_time(void* ctx) { return ((dvui_TestingBackend*)ctx)->time_ns; }
+// DVUI: testing.zig – sleep (nic nedělá; čas posouvá test)
+static void tb_sleep(void* ctx, uint64_t ns) {
+    (void)ctx;
+    (void)ns;
+}
 
 void dvui_testing_backend_init(dvui_TestingBackend* tb, dvui_Size size) {
     *tb = (dvui_TestingBackend){.pixel_size = size, .window_size = size, .content_scale = 1.0f};
@@ -65,5 +70,6 @@ dvui_Backend dvui_testing_backend(dvui_TestingBackend* tb) {
         .set_cursor = tb_set_cursor,
         .render_present = tb_render_present,
         .nano_time = tb_nano_time,
+        .sleep = tb_sleep,
     };
 }

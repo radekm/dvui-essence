@@ -663,7 +663,7 @@ static void end_rendering(dvui_Window* win) {
 // Window.end (DVUI: Window.end)
 // ---------------------------------------------------------------------------
 
-int64_t dvui_window_end(dvui_Window* win) {
+int32_t dvui_window_end(dvui_Window* win) {
     // všechny widgety musí vrátit rodiče
     dvui_parent_reset(win->wd.id, window_widget(win));
 

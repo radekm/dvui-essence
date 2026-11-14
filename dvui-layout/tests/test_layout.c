@@ -63,7 +63,7 @@ typedef void (*FrameFn)(void* ctx);
 typedef void (*EventsFn)(dvui_Window* win, void* ctx);
 
 // Jeden snímek; vrací výsledek dvui_window_end.
-static int64_t step(Harness* h, EventsFn events, FrameFn frame, void* ctx) {
+static int32_t step(Harness* h, EventsFn events, FrameFn frame, void* ctx) {
     h->time += 16000000; // 16 ms
     dvui_window_begin(h->win, h->time);
     if (events) events(h->win, ctx);

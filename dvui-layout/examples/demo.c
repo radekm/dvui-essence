@@ -197,11 +197,13 @@ int main(int argc, char** argv) {
         dvui_window_begin(win, (int64_t)SDL_GetTicksNS());
         dvui_sdl3gpu_add_all_events(backend, win);
         frame(&st);
-        const int64_t wait = dvui_window_end(win);
+        const int32_t wait = dvui_window_end(win);
 
         frames++;
         if (max_frames >= 0 && frames >= max_frames) break;
-        dvui_sdl3gpu_wait_event_timeout(backend, max_frames >= 0 ? 0 : wait);
+        // −1 (null) = čekat na událost bez limitu (UINT32_MAX)
+        const uint32_t timeout = max_frames >= 0 ? 0 : (wait < 0 ? UINT32_MAX : (uint32_t)wait);
+        (void)dvui_sdl3gpu_wait_event_timeout(backend, timeout);
     }
 
     dvui_window_destroy(win);

@@ -582,8 +582,9 @@ void dvui_window_open_flag_set(dvui_Window* win, bool* open_flag);
 // DVUI: Window.begin
 void dvui_window_begin(dvui_Window* win, int64_t time_ns);
 // DVUI: Window.end – vrací, za kolik mikrosekund chce další snímek
-// (0 = hned, -1 = čekat na událost).
-int64_t dvui_window_end(dvui_Window* win);
+// (0 = hned, -1 = čekat na událost; DVUI `?u32`, null = −1). dvui-layout
+// nemá animace, takže vrací jen 0 nebo −1.
+int32_t dvui_window_end(dvui_Window* win);
 
 // DVUI: Window.cursorRequested
 dvui_Cursor dvui_window_cursor_requested(const dvui_Window* win);

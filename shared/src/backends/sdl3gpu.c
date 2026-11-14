@@ -490,6 +490,12 @@ static void be_render_present(void* ctx) {
     b->swapchain_texture = nullptr;
 }
 
+// DVUI: sdl3gpu.zig – sleep
+static void be_sleep(void* ctx, uint64_t ns) {
+    (void)ctx;
+    SDL_DelayNS(ns);
+}
+
 static int64_t be_nano_time(void* ctx) {
     (void)ctx;
     return (int64_t)SDL_GetTicksNS();
@@ -507,6 +513,7 @@ dvui_Backend dvui_sdl3gpu_backend(dvui_Sdl3GpuBackend* b) {
         .set_cursor = be_set_cursor,
         .render_present = be_render_present,
         .nano_time = be_nano_time,
+        .sleep = be_sleep,
     };
 }
 
@@ -597,12 +604,28 @@ bool dvui_sdl3gpu_add_all_events(dvui_Sdl3GpuBackend* b, dvui_Window* win) {
     return quit;
 }
 
-void dvui_sdl3gpu_wait_event_timeout(dvui_Sdl3GpuBackend* b, int64_t micros) {
+// DVUI: sdl3gpu.zig – waitEventTimeout
+bool dvui_sdl3gpu_wait_event_timeout(dvui_Sdl3GpuBackend* b, uint32_t timeout_micros) {
     (void)b;
-    if (micros == 0) return;
-    if (micros < 0) {
+    if (timeout_micros == UINT32_MAX) {
+        // bez časového limitu
         SDL_WaitEvent(nullptr);
-    } else {
-        SDL_WaitEventTimeout(nullptr, (Sint32)((micros + 999) / 1000));
+        return false;
     }
+
+    if (timeout_micros > 0) {
+        // čekání s časovým limitem
+        uint32_t timeout = (timeout_micros + 999) / 1000;
+        if (timeout > INT32_MAX) timeout = INT32_MAX;
+        const bool ret = SDL_WaitEventTimeout(nullptr, (Sint32)timeout);
+
+        // DVUI: obejití https://github.com/libsdl-org/SDL/issues/6539
+        // (ponecháno kvůli starším verzím SDL)
+        SDL_PollEvent(nullptr);
+
+        return ret;
+    }
+
+    // vůbec nečekat
+    return false;
 }

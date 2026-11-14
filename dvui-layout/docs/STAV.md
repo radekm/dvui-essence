@@ -271,6 +271,8 @@ použití, klíče). Liší se:
   `hoverFade`, je uložený v datovém úložišti. Až se budou portovat widgety,
   které animace potřebují (např. PanedWidget), přibude třetí mapa stejného
   druhu a `dvui_window_end` bude vracet čas do konce nejbližší animace.
+  Animace implementuje projekt
+  [dvui-animation](../../dvui-animation/docs/ANIMACE.md).
 - **Chybí mapa tagů** (`Window.tags`, `dvui.tag`/`tagGet` – pojmenovaná
   místa na obrazovce, používá je Docking).
 - **Jeden slot tažení a jeden capture** místo slotu pro každé tlačítko/prst.
