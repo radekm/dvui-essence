@@ -7,7 +7,7 @@ jednotlivé části knihovny [DVUI](https://github.com/david-vanderson/dvui)
 (immediate-mode GUI v jazyce Zig). Každý projekt izoluje jednu „esenci“ DVUI:
 
 1. **dvui-layout** – layout widgetů (hotovo).
-2. **dvui-animation** – animace, easing, časovače a AnimateWidget (rozpracováno).
+2. **dvui-animation** – animace, easing, časovače a AnimateWidget (hotovo).
 3. dvui-text – vykreslování textu (později).
 4. dvui-text-selection – výběr textu (později).
 5. dvui-text-edit – editace textu (později).
@@ -144,6 +144,9 @@ shared/
 
 - [x] Krok 1: přesun sdíleného kódu z dvui-layout do `shared/`; dvui-layout
       ho používá, testy (159 kontrol) projdou, demo je pixelově stejné.
+- [x] Krok 2: `dvui_Backend.sleep`, `dvui_sdl3gpu_wait_event_timeout`
+      s `uint32_t` a návratovou hodnotou (kvůli `Window.waitTime`
+      v dvui-animation).
 
 ## Projekt dvui-animation
 
@@ -163,18 +166,50 @@ Implementovat (zdroje v `dvui-original/src`):
 - všechny funkce z `easing.zig`;
 - AnimateWidget (`dvui.animate`): druhy alpha, vertical, horizontal, none.
 
+### Rozhodnutí (odsouhlasená vlastníkem)
+
+- `dvui_window_end` vrací `int32_t` – počet mikrosekund, −1 = DVUI `null`
+  (čekat na událost). Totéž platí pro dvui-layout (vrací jen 0 / −1).
+- `Window.waitTime` a `beginWait` celé (včetně `max_fps` a slop); do
+  sdíleného rozhraní backendu přibyla funkce `sleep` a
+  `dvui_sdl3gpu_wait_event_timeout` má jako DVUI parametr `uint32_t`
+  (`UINT32_MAX` = bez limitu) a vrací „přerušeno událostí“. dvui-layout
+  se přizpůsobil (převod −1 → `UINT32_MAX` v demu).
+- Overlay je převzatý jako pomocný widget (používá ho DVUI Examples).
+
+### Architektura
+
+```
+dvui-animation/
+  meson.build                  používá soubory z ../shared
+  include/dvui/dvui.h          veřejné API; vkládá dvui/base.h
+  src/
+    animation.c                Animation, animation/animationGet, časovače, reduce_motion
+    easing.c                   easing.zig
+    window.c                   Window (stárnutí animací v begin, end, waitTime, beginWait)
+    core.c, frame.c, widget_data.c, layout.c   jako dvui-layout (bez placeOnScreen, fontu)
+    widgets/animate.c          AnimateWidget
+    widgets/box.c, button.c, simple.c (spacer, separator, label placeholder, overlay)
+  examples/demo.c              demo podle Examples/animations.zig
+  tests/test_animation.c       testy animací (+ základní testy layoutu)
+  docs/ANIMACE.md, ROZHRANI.md, ODCHYLKY.md
+```
+
 ### Fáze
 
-- [ ] Fáze 1: kopie dvui-layout → dvui-animation, odstranění scrollu,
-      gridu a plovoucích widgetů; build a zúžené testy.
-- [ ] Fáze 2: easing, `dvui_Animation`, mapa animací, stárnutí v `begin`,
+- [x] Fáze 1: kopie dvui-layout → dvui-animation, odstranění scrollu,
+      gridu, plovoucích widgetů a Scale.
+- [x] Fáze 2: easing, `dvui_Animation`, mapa animací, stárnutí v `begin`,
       časovače, `reduce_motion`.
-- [ ] Fáze 3: návratová hodnota `dvui_window_end`, `waitTime`, úprava
-      backendu a smyčky dema.
-- [ ] Fáze 4: AnimateWidget a alfa při kreslení.
-- [ ] Fáze 5: testy (easing, window_end, životnost animací, časovače,
-      AnimateWidget, reduce_motion).
-- [ ] Fáze 6: demo podle `Examples/animations.zig` bez textu.
-- [ ] Fáze 7: dokumentace (`dvui-animation/README.md`, `docs/ANIMACE.md`,
-      `docs/ROZHRANI.md`, `docs/ODCHYLKY.md`), ověření buildu (GCC, Clang,
-      ASan/UBSan), snímek dema.
+- [x] Fáze 3: návratová hodnota `dvui_window_end`, `waitTime`,
+      `beginWait`, úprava sdíleného backendu a smyčky dem.
+- [x] Fáze 4: AnimateWidget a alfa při kreslení.
+- [x] Fáze 5: testy (easing, window_end, životnost animací, časovače,
+      AnimateWidget, reduce_motion, waitTime).
+- [x] Fáze 6: demo podle `Examples/animations.zig` bez textu.
+- [x] Fáze 7: dokumentace, ověření buildu (GCC 13, Clang 18, ASan/UBSan,
+      bez varování), snímek dema pod Xvfb (lavapipe).
+
+### Stav
+
+Hotovo a ověřeno na Linuxu. Windows a macOS zatím nejsou otestované.

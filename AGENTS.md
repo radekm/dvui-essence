@@ -16,7 +16,7 @@ Před začátkem práce si přečti také [PLAN.md](PLAN.md).
 
 - Výchozí a pracovní větev je `master`.
 - Repozitář obsahuje více samostatných projektů, každý ve vlastním adresáři
-  (`dvui-layout/`, později `dvui-text/`, `dvui-text-selection/`, `dvui-text-edit/`, …).
+  (`dvui-layout/`, `dvui-animation/`, později `dvui-text/`, `dvui-text-selection/`, `dvui-text-edit/`, …).
 - Každý projekt má vlastní `meson.build` a lze ho sestavit samostatně
   (ze svého adresáře).
 - `shared/` obsahuje kód společný všem projektům (popis v
